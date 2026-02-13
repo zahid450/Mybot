@@ -453,7 +453,7 @@
             input.focus();
         };
 
-        function renderMessages() {
+                function renderMessages() {
             const chat = state.chats.find(c => c.id === state.currentChatId);
             if (!chat) return;
 
@@ -467,27 +467,44 @@
             
             elements.welcomeMessage.style.display = 'none';
 
-            chat.messages.forEach(msg => {
-                appendMessageToDOM(msg.role, msg.content);
+            // UPDATED: Now passing 'index' to the append function
+            chat.messages.forEach((msg, index) => {
+                appendMessageToDOM(msg.role, msg.content, index);
             });
             
             scrollToBottom();
         }
 
-        function appendMessageToDOM(role, content) {
+                function appendMessageToDOM(role, content, index) {
             const isUser = role === 'user';
             const wrapper = document.createElement('div');
-            wrapper.className = `flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`;
+            wrapper.className = `flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} group`; // Added 'group' class for hover effects
             
             const bubble = document.createElement('div');
-            // User style vs AI style
             if (isUser) {
-                bubble.className = 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-5 py-3.5 rounded-2xl rounded-tr-sm max-w-[85%] md:max-w-[75%] whitespace-pre-wrap shadow-sm';
-                bubble.textContent = content;
+                bubble.className = 'relative max-w-[85%] md:max-w-[75%]';
+                
+                // 1. The Message Text
+                const textDiv = document.createElement('div');
+                textDiv.className = 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-5 py-3.5 rounded-2xl rounded-tr-sm whitespace-pre-wrap shadow-sm';
+                textDiv.textContent = content;
+                
+                // 2. The New Edit Button (Visible on hover)
+                // Note: We check if index is valid to prevent errors
+                if (typeof index === 'number') {
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'absolute -left-10 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-900 rounded-full shadow-sm border border-gray-200 dark:border-gray-700';
+                    editBtn.innerHTML = '<i class="ph ph-pencil-simple text-lg"></i>';
+                    editBtn.onclick = () => editMessage(index);
+                    editBtn.title = "Edit & Regenerate";
+                    bubble.appendChild(editBtn);
+                }
+                
+                bubble.appendChild(textDiv);
             } else {
+                // AI Message Logic (Unchanged)
                 bubble.className = 'w-full max-w-3xl pr-4 md:pr-12 text-gray-900 dark:text-gray-100';
                 
-                // Avatar + Content layout
                 const innerLayout = document.createElement('div');
                 innerLayout.className = 'flex gap-4';
                 
@@ -498,7 +515,6 @@
                 const textContent = document.createElement('div');
                 textContent.className = 'prose dark:prose-invert min-w-0 flex-1';
                 
-                // Parse markdown securely
                 const sanitizedHtml = DOMPurify.sanitize(marked.parse(content));
                 textContent.innerHTML = sanitizedHtml;
 
@@ -514,7 +530,8 @@
             bubble.querySelectorAll('pre code').forEach((block) => {
                 highlight.highlightElement(block);
             });
-      }
+        }
+
 
         async function sendMessage() {
             const text = elements.userInput.value.trim();
@@ -733,6 +750,34 @@
                 state.settings = { ...state.settings, ...parsed.settings };
                 state.currentChatId = parsed.currentChatId;
             }
+                  function editMessage(index) {
+            const chat = state.chats.find(c => c.id === state.currentChatId);
+            if (!chat || !chat.messages[index]) return;
+
+            // Confirm with user because this is destructive
+            if (!confirm('Edit this message? This will delete all subsequent messages in this conversation.')) {
+                return;
+            }
+
+            // 1. Get the old text
+            const textToEdit = chat.messages[index].content;
+            
+            // 2. Put it into the input box
+            elements.userInput.value = textToEdit;
+            
+            // 3. Resize input box to fit text
+            elements.userInput.style.height = 'auto'; 
+            elements.userInput.style.height = Math.min(elements.userInput.scrollHeight, 192) + 'px';
+            elements.userInput.focus();
+            
+            // 4. Delete this message and EVERYTHING that came after it (Rewind)
+            chat.messages = chat.messages.slice(0, index);
+            
+            // 5. Update the screen
+            saveState();
+            renderMessages();
+        }
+  
         }
     </script>
 </body>
