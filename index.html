@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Universal AI Interface</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        },
+                        primary: {
+                            500: '#3b82f6', // Blue-500
+                            600: '#2563eb', // Blue-600
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #374151;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Markdown Styles */
+        .prose {
+            max-width: none;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        .prose p { margin-bottom: 0.75em; }
+        .prose pre { 
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 1rem; 
+            border-radius: 0.5rem; 
+            overflow-x: auto;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .prose code { 
+            background: rgba(0,0,0,0.1); 
+            padding: 0.2rem 0.4rem; 
+            border-radius: 0.25rem; 
+            font-size: 0.85em;
+            font-family: monospace;
+        }
+        .dark .prose code { background: rgba(255,255,255,0.1); color: #e5e7eb; }
+        .prose ul, .prose ol { margin-left: 1.5rem; margin-bottom: 0.75em; }
+        .prose li { list-style-type: disc; margin-bottom: 0.25em; }
+        .prose strong { font-weight: 600; }
+        
+        /* Mobile Layout Fixes */
+        body {
+            overscroll-behavior-y: none; /* Prevent pull-to-refresh */
+        }
+        
+        /* Loader */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .dark #loading-screen { background: #111827; color: white; }
+
+        /* Typing cursor */
+        .cursor-blink {
+            display: inline-block;
+            width: 6px;
+            height: 16px;
+            background-color: currentColor;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body class="h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased overflow-hidden selection:bg-blue-200 dark:selection:bg-blue-900">
+
+    <div id="loading-screen">
+        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div class="text-sm font-medium animate-pulse">Initializing Interface...</div>
+    </div>
+
+    <div id="app" class="h-full flex flex-col md:flex-row opacity-0 transition-opacity duration-300">
+        
+        <header class="md:hidden flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-20 sticky top-0">
+            <button id="mobile-menu-btn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <i class="ph ph-list text-2xl"></i>
+            </button>
+            <span class="font-semibold text-gray-700 dark:text-gray-200">Universal AI</span>
+            <button id="new-chat-mobile" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <i class="ph ph-plus text-xl"></i>
+            </button>
+        </header>
+
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass"></div>
+
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-gray-50 dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 flex flex-col h-full">
+            
+            <div class="p-4">
+                <button id="new-chat-btn" class="w-full flex items-center gap-3 px-4 py-3 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-xl transition-colors text-sm font-medium text-gray-700 dark:text-gray-200">
+                    <i class="ph ph-plus text-lg"></i>
+                    <span>New Chat</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-2 space-y-1" id="chat-history-list">
+                </div>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                 <button id="settings-btn" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg transition-colors">
+                    <i class="ph ph-gear text-lg"></i>
+                    <span>Settings & API</span>
+                </button>
+                <div class="flex items-center justify-between px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+                    <span class="text-xs">Dark Mode</span>
+                    <button id="theme-toggle" class="relative inline-flex h-5 w-9 items-center rounded-full bg-gray-300 dark:bg-gray-700 transition-colors">
+                        <span id="theme-knob" class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform translate-x-1 dark:translate-x-5"></span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full relative w-full bg-white dark:bg-gray-900">
+            
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth pb-32">
+                <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg">
+                        <i class="ph ph-sparkle"></i>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">How can I help you today?</h2>
+                    <p class="text-sm text-gray-500 max-w-md">I am a universal interface. Configure your model in settings to begin.</p>
+                </div>
+                </div>
+
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent dark:from-gray-900 dark:via-gray-900 pt-10 pb-4 px-4 md:px-8 z-10">
+                <div class="max-w-4xl mx-auto relative">
+                    <div id="status-bar" class="absolute -top-8 left-0 text-xs text-gray-400 hidden">
+                        <span class="animate-pulse">Thinking...</span>
+                    </div>
+
+                    <div class="relative bg-gray-100 dark:bg-gray-800 rounded-2xl border border-transparent focus-within:border-gray-300 dark:focus-within:border-gray-600 focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-gray-600 transition-all shadow-sm">
+                        <textarea 
+                            id="user-input" 
+                            rows="1" 
+                            class="w-full bg-transparent border-0 rounded-2xl px-4 py-3.5 pr-12 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-0 resize-none max-h-48 overflow-y-auto"
+                            placeholder="Type a message..."
+                            style="min-height: 52px;"
+                        ></textarea>
+                        
+                        <button id="send-btn" class="absolute right-2 bottom-2 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md">
+                            <i class="ph ph-paper-plane-right text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="text-[10px] text-gray-400">Universal Interface • Markdown Support • Zero-Build</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="settings-backdrop"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col max-h-[90vh]">
+                <div class="p-5 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                    <h3 class="font-semibold text-lg">Settings</h3>
+                    <button id="close-settings" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
+                        <i class="ph ph-x text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="p-5 overflow-y-auto space-y-5">
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-gray-500">OpenRouter API Key</label>
+                        <input type="password" id="api-key-input" class="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" placeholder="sk-or-...">
+                        <p class="text-xs text-gray-400">Key is stored locally in your browser.</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-gray-500">Model Name</label>
+                        <input type="text" id="model-input" class="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value="deepseek/deepseek-r1:free" placeholder="e.g. anthropic/claude-3-opus">
+                        <div class="flex gap-2 flex-wrap">
+                            <button class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onclick="setPreset('deepseek/deepseek-r1:free')">DeepSeek Free</button>
+                            <button class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onclick="setPreset('google/gemini-pro')">Gemini Pro</button>
+                            <button class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" onclick="setPreset('mistralai/mistral-7b-instruct')">Mistral 7B</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-gray-500">System Prompt (Global)</label>
+                        <textarea id="system-prompt-input" rows="4" class="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="You are a helpful assistant..."></textarea>
+                        <p class="text-xs text-gray-400">Defines how the AI behaves. Leave blank for default.</p>
+                    </div>
+                </div>
+
+                <div class="p-5 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 rounded-b-2xl">
+                    <button id="save-settings" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition-all shadow-lg shadow-blue-500/20">
+                        Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            chats: [], // Array of { id, title, messages: [] }
+            currentChatId: null,
+            settings: {
+                apiKey: '',
+                model: 'deepseek/deepseek-r1:free',
+                systemPrompt: '',
+                theme: 'light' // 'light' or 'dark'
+            },
+            isGenerating: false
+        };
+
+        // --- DOM Elements ---
+        const elements = {
+            app: document.getElementById('app'),
+            loadingScreen: document.getElementById('loading-screen'),
+            chatContainer: document.getElementById('chat-container'),
+            welcomeMessage: document.getElementById('welcome-message'),
+            userInput: document.getElementById('user-input'),
+            sendBtn: document.getElementById('send-btn'),
+            chatHistoryList: document.getElementById('chat-history-list'),
+            newChatBtn: document.getElementById('new-chat-btn'),
+            newChatMobile: document.getElementById('new-chat-mobile'),
+            mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+            sidebar: document.getElementById('sidebar'),
+            sidebarOverlay: document.getElementById('sidebar-overlay'),
+            settingsBtn: document.getElementById('settings-btn'),
+            settingsModal: document.getElementById('settings-modal'),
+            closeSettings: document.getElementById('close-settings'),
+            settingsBackdrop: document.getElementById('settings-backdrop'),
+            apiKeyInput: document.getElementById('api-key-input'),
+            modelInput: document.getElementById('model-input'),
+            systemPromptInput: document.getElementById('system-prompt-input'),
+            saveSettingsBtn: document.getElementById('save-settings'),
+            themeToggle: document.getElementById('theme-toggle'),
+            themeKnob: document.getElementById('theme-knob'),
+            statusBar: document.getElementById('status-bar')
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            applyTheme();
+            initMarkdown();
+            renderChats();
+            
+            // If no chats, create one
+            if (state.chats.length === 0) {
+                createNewChat(false);
+            } else {
+                // Select most recent
+                loadChat(state.chats[0].id);
+            }
+
+            // Remove loader
+            setTimeout(() => {
+                elements.loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    elements.loadingScreen.style.display = 'none';
+                    elements.app.classList.remove('opacity-0');
+                }, 500);
+            }, 800);
+        });
+
+        function initMarkdown() {
+            marked.use({
+                highlight: function(code, lang) {
+                    const language = highlight.getLanguage(lang) ? lang : 'plaintext';
+                    return highlight.highlight(code, { language }).value;
+                },
+                breaks: true,
+                gfm: true
+            });
+        }
+
+        // --- Event Listeners ---
+        elements.sendBtn.addEventListener('click', sendMessage);
+        
+        elements.userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+            // Auto-resize
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 192) + 'px';
+        });
+
+        elements.newChatBtn.addEventListener('click', () => {
+            createNewChat();
+            if (window.innerWidth < 768) closeSidebar();
+        });
+        
+        elements.newChatMobile.addEventListener('click', () => createNewChat());
+
+        // Mobile Sidebar
+        elements.mobileMenuBtn.addEventListener('click', openSidebar);
+        elements.sidebarOverlay.addEventListener('click', closeSidebar);
+
+        // Settings Modal
+        elements.settingsBtn.addEventListener('click', openSettings);
+        elements.closeSettings.addEventListener('click', closeSettings);
+        elements.settingsBackdrop.addEventListener('click', closeSettings);
+        elements.saveSettingsBtn.addEventListener('click', saveSettings);
+
+        // Theme
+        elements.themeToggle.addEventListener('click', toggleTheme);
+
+        // --- Core Logic ---
+
+        function createNewChat(switchToIt = true) {
+            const newChat = {
+                id: Date.now().toString(),
+                title: 'New Chat',
+                messages: []
+            };
+            state.chats.unshift(newChat); // Add to top
+            saveState();
+            renderChats();
+            if (switchToIt) loadChat(newChat.id);
+        }
+
+        function loadChat(chatId) {
+            state.currentChatId = chatId;
+            renderChats(); // Update active state in sidebar
+            renderMessages();
+            // Close sidebar on mobile
+            if (window.innerWidth < 768) closeSidebar();
+        }
+
+        function deleteChat(chatId, e) {
+            e.stopPropagation();
+            if (!confirm('Delete this chat?')) return;
+            
+            state.chats = state.chats.filter(c => c.id !== chatId);
+            if (state.chats.length === 0) {
+                createNewChat(false);
+            } else if (state.currentChatId === chatId) {
+                state.currentChatId = state.chats[0].id;
+            }
+            saveState();
+            renderChats();
+            renderMessages();
+        }
+
+        function renameChat(chatId, newTitle) {
+            const chat = state.chats.find(c => c.id === chatId);
+            if (chat) {
+                chat.title = newTitle;
+                saveState();
+                renderChats();
+            }
+        }
+
+        function renderChats() {
+            elements.chatHistoryList.innerHTML = '';
+            state.chats.forEach(chat => {
+                const div = document.createElement('div');
+                const isActive = chat.id === state.currentChatId;
+                div.className = `group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors text-sm ${isActive ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'}`;
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <i class="ph ${isActive ? 'ph-chat-circle-text' : 'ph-chat-circle'} text-lg flex-shrink-0"></i>
+                        <span class="truncate" ondblclick="startRenaming('${chat.id}', this)">${escapeHtml(chat.title)}</span>
+                    </div>
+                    <button class="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity p-1" onclick="deleteChat('${chat.id}', event)">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                `;
+                div.onclick = () => loadChat(chat.id);
+                elements.chatHistoryList.appendChild(div);
+            });
+        }
+
+        window.startRenaming = (chatId, span) => {
+            const currentTitle = span.innerText;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentTitle;
+            input.className = 'bg-transparent border-b border-blue-500 outline-none w-full text-sm p-0';
+            
+            input.onblur = () => {
+                renameChat(chatId, input.value || 'New Chat');
+            };
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') input.blur();
+            };
+            
+            span.replaceWith(input);
+            input.focus();
+        };
+
+        function renderMessages() {
+            const chat = state.chats.find(c => c.id === state.currentChatId);
+            if (!chat) return;
+
+            elements.chatContainer.innerHTML = '';
+            
+            if (chat.messages.length === 0) {
+                elements.chatContainer.appendChild(elements.welcomeMessage);
+                elements.welcomeMessage.style.display = 'flex';
+                return;
+            }
+            
+            elements.welcomeMessage.style.display = 'none';
+
+            chat.messages.forEach(msg => {
+                appendMessageToDOM(msg.role, msg.content);
+            });
+            
+            scrollToBottom();
+        }
+
+        function appendMessageToDOM(role, content) {
+            const isUser = role === 'user';
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`;
+            
+            const bubble = document.createElement('div');
+            // User style vs AI style
+            if (isUser) {
+                bubble.className = 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-5 py-3.5 rounded-2xl rounded-tr-sm max-w-[85%] md:max-w-[75%] whitespace-pre-wrap shadow-sm';
+                bubble.textContent = content;
+            } else {
+                bubble.className = 'w-full max-w-3xl pr-4 md:pr-12 text-gray-900 dark:text-gray-100';
+                
+                // Avatar + Content layout
+                const innerLayout = document.createElement('div');
+                innerLayout.className = 'flex gap-4';
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex-shrink-0 flex items-center justify-center text-white text-xs mt-1';
+                avatar.innerHTML = '<i class="ph ph-sparkle-fill"></i>';
+                
+                const textContent = document.createElement('div');
+                textContent.className = 'prose dark:prose-invert min-w-0 flex-1';
+                
+                // Parse markdown securely
+                const sanitizedHtml = DOMPurify.sanitize(marked.parse(content));
+                textContent.innerHTML = sanitizedHtml;
+
+                innerLayout.appendChild(avatar);
+                innerLayout.appendChild(textContent);
+                bubble.appendChild(innerLayout);
+            }
+            
+            wrapper.appendChild(bubble);
+            elements.chatContainer.appendChild(wrapper);
+            
+            // Re-highlight code blocks
+            bubble.querySelectorAll('pre code').forEach((block) => {
+                highlight.highlightElement(block);
+            });
+      }
+
+        async function sendMessage() {
+            const text = elements.userInput.value.trim();
+            if (!text || state.isGenerating) return;
+
+            if (!state.settings.apiKey) {
+                alert('Please set your OpenRouter API Key in Settings first.');
+                openSettings();
+                return;
+            }
+
+            // 1. Add User Message
+            const chat = state.chats.find(c => c.id === state.currentChatId);
+            chat.messages.push({ role: 'user', content: text });
+            appendMessageToDOM('user', text);
+            
+            // Clear input
+            elements.userInput.value = '';
+            elements.userInput.style.height = 'auto'; // reset height
+            saveState();
+            scrollToBottom();
+
+            // 2. Prepare AI Response
+            state.isGenerating = true;
+            elements.statusBar.classList.remove('hidden');
+            elements.sendBtn.disabled = true;
+
+            // Create placeholder for streaming
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex w-full mb-6 justify-start';
+            const inner = `
+                <div class="w-full max-w-3xl pr-4 md:pr-12">
+                    <div class="flex gap-4">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex-shrink-0 flex items-center justify-center text-white text-xs mt-1 animate-pulse">
+                            <i class="ph ph-lightning-fill"></i>
+                        </div>
+                        <div class="prose dark:prose-invert min-w-0 flex-1" id="streaming-content">
+                            <span class="cursor-blink"></span>
+                        </div>
+                    </div>
+                </div>`;
+            wrapper.innerHTML = inner;
+            elements.chatContainer.appendChild(wrapper);
+            const streamingContentDiv = wrapper.querySelector('#streaming-content');
+            scrollToBottom();
+
+            // 3. API Call
+            let fullAiResponse = "";
+            
+            try {
+                // Construct messages array with system prompt
+                const apiMessages = [];
+                if (state.settings.systemPrompt) {
+                    apiMessages.push({ role: 'system', content: state.settings.systemPrompt });
+                }
+                apiMessages.push(...chat.messages.slice(-10)); // Context window limit logic can be improved
+
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${state.settings.apiKey}`,
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": window.location.href, // Required by OpenRouter
+                        "X-Title": "Universal AI Interface"
+                    },
+                    body: JSON.stringify({
+                        model: state.settings.model,
+                        messages: apiMessages,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split("\n");
+                    
+                    for (const line of lines) {
+                        if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                const content = data.choices[0]?.delta?.content || "";
+                                fullAiResponse += content;
+                                
+                                // Live Render
+                                const rawHtml = marked.parse(fullAiResponse);
+                                streamingContentDiv.innerHTML = DOMPurify.sanitize(rawHtml) + '<span class="cursor-blink"></span>';
+                                scrollToBottom();
+                            } catch (e) {
+                                console.warn("Parse error", e);
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                fullAiResponse += `\n\n**Error:** ${error.message}`;
+                streamingContentDiv.innerHTML = marked.parse(fullAiResponse);
+            } finally {
+                // Cleanup
+                streamingContentDiv.querySelector('.cursor-blink')?.remove();
+                
+                // Save AI message
+                chat.messages.push({ role: 'assistant', content: fullAiResponse });
+                
+                // Auto-title if it's the first exchange
+                if (chat.messages.length === 2) {
+                    generateTitle(chat.messages[0].content, chat.id);
+                }
+
+                saveState();
+                state.isGenerating = false;
+                elements.statusBar.classList.add('hidden');
+                elements.sendBtn.disabled = false;
+                
+                // Re-highlight final code
+                streamingContentDiv.querySelectorAll('pre code').forEach((block) => {
+                    highlight.highlightElement(block);
+                });
+            }
+        }
+
+        // --- Helpers ---
+
+        // Simple heuristic title generator (mock)
+        function generateTitle(userMsg, chatId) {
+            const title = userMsg.slice(0, 30) + (userMsg.length > 30 ? '...' : '');
+            renameChat(chatId, title);
+        }
+
+        function scrollToBottom() {
+            elements.chatContainer.scrollTo({
+                top: elements.chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // --- Settings / UI Toggles ---
+
+        function openSettings() {
+            elements.apiKeyInput.value = state.settings.apiKey;
+            elements.modelInput.value = state.settings.model;
+            elements.systemPromptInput.value = state.settings.systemPrompt;
+            elements.settingsModal.classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            elements.settingsModal.classList.add('hidden');
+        }
+
+        function saveSettings() {
+            state.settings.apiKey = elements.apiKeyInput.value.trim();
+            state.settings.model = elements.modelInput.value.trim();
+            state.settings.systemPrompt = elements.systemPromptInput.value.trim();
+            saveState();
+            closeSettings();
+        }
+
+        window.setPreset = (model) => {
+            elements.modelInput.value = model;
+        };
+
+        function openSidebar() {
+            elements.sidebar.classList.remove('-translate-x-full');
+            elements.sidebarOverlay.classList.remove('hidden');
+        }
+
+        function closeSidebar() {
+            elements.sidebar.classList.add('-translate-x-full');
+            elements.sidebarOverlay.classList.add('hidden');
+        }
+
+        function toggleTheme() {
+            state.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
+            applyTheme();
+            saveState();
+        }
+
+        function applyTheme() {
+            const html = document.documentElement;
+            if (state.settings.theme === 'dark') {
+                html.classList.add('dark');
+                elements.themeKnob.classList.add('translate-x-5');
+                elements.themeKnob.classList.remove('translate-x-1');
+            } else {
+                html.classList.remove('dark');
+                elements.themeKnob.classList.remove('translate-x-5');
+                elements.themeKnob.classList.add('translate-x-1');
+            }
+        }
+
+        // --- Local Storage ---
+
+        function saveState() {
+            localStorage.setItem('universal_ai_state', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('universal_ai_state');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Merge to ensure new fields exist
+                state.chats = parsed.chats || [];
+                state.settings = { ...state.settings, ...parsed.settings };
+                state.currentChatId = parsed.currentChatId;
+            }
+        }
+    </script>
+</body>
+</html>
