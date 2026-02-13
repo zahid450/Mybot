@@ -227,9 +227,9 @@
             if (!isContinue && (!text || state.isGenerating)) return;
             if (!state.settings.apiKey) return alert("Missing API Key");
 
-            // 1. CLEAN THE API KEY (Fixes ISO-8859-1 Error)
-            // Removes any invisible characters like newlines
+            // Clean Keys
             const cleanKey = state.settings.apiKey.replace(/[^\x20-\x7E]/g, '').trim();
+            const cleanModel = state.settings.model.trim();
 
             const chat = state.chats.find(c => c.id === state.activeChat);
             if (!isContinue) {
@@ -260,12 +260,18 @@
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${cleanKey}`, // Using the cleaned key
+                        "Authorization": `Bearer ${cleanKey}`,
                         "Content-Type": "application/json",
                         "HTTP-Referer": "https://github.com/universal-ai",
                         "X-Title": "Universal AI"
                     },
-                    body: JSON.stringify({ model: state.settings.model, messages: msgs, stream: true })
+                    // FIX: Added max_tokens: 8000 to allow long responses
+                    body: JSON.stringify({ 
+                        model: cleanModel, 
+                        messages: msgs, 
+                        stream: true, 
+                        max_tokens: 8000 
+                    })
                 });
 
                 if (!resp.ok) throw new Error(`API Error ${resp.status}`);
@@ -301,7 +307,6 @@
                 saveState();
             }
         }
-
         // --- UI RENDERING ---
         function appendMessage(role, text, index) {
             const list = document.getElementById('messages-list');
