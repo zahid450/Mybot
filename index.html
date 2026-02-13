@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Universal AI Interface v3</title>
+    <title>Universal AI - Roleplay V4</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <script>
@@ -21,685 +18,624 @@
             theme: {
                 extend: {
                     colors: {
-                        gray: { 850: '#1f2937', 900: '#111827', 950: '#030712' }
+                        midnight: { 900: '#020617', 800: '#0f172a', 700: '#1e293b' },
+                        roleplay: { user: '#fde047', ai: '#c084fc' }
                     },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    }
+                    animation: { 'pulse-slow': 'pulse 3s infinite' }
                 }
             }
         }
     </script>
 
     <style>
-        /* 1. APP BACKGROUND */
+        /* --- 1. CHUB-STYLE THEME --- */
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
             background-attachment: fixed;
             color: #e2e8f0;
-            overscroll-behavior-y: none;
+            overscroll-behavior-y: none; /* Prevents pull-to-refresh on Android */
         }
+
+        /* --- 2. MESSAGE STYLING (THE IMPORTANT PART) --- */
         
-        /* 2. CUSTOM SCROLLBAR */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 4px; }
-        
-        /* 3. MESSAGE BUBBLES & FORMATTING */
-        
-        /* USER BUBBLE STYLING */
-        .user-bubble {
+        /* USER BUBBLE */
+        .msg-user {
             background: linear-gradient(to right, #2563eb, #3b82f6);
-            color: white !important;
+            color: white;
             border-radius: 18px 18px 4px 18px;
             box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
             border: 1px solid rgba(255,255,255,0.1);
         }
-        /* User Actions (*text*) -> Light Yellow for contrast on Blue */
-        .user-bubble em { color: #fde047 !important; font-style: italic; opacity: 0.9; }
-        .user-bubble strong { color: #ffffff !important; font-weight: 800; }
-        .user-bubble p { margin: 0; }
+        /* User Markdown Colors */
+        .msg-user em { color: #fde047 !important; font-style: italic; opacity: 0.95; } /* Actions = Yellow */
+        .msg-user strong { color: #ffffff !important; font-weight: 800; }
+        .msg-user p { margin-bottom: 0.5rem; }
+        .msg-user p:last-child { margin-bottom: 0; }
 
-        /* AI BUBBLE STYLING */
-        .ai-bubble {
-            background: rgba(15, 23, 42, 0.6);
+        /* AI BUBBLE */
+        .msg-ai {
+            background: rgba(15, 23, 42, 0.7); /* Dark Glass */
             border: 1px solid rgba(255,255,255,0.05);
             border-radius: 18px 18px 18px 4px;
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        /* AI Actions (*text*) -> Light Purple */
-        .ai-bubble em { color: #c084fc; font-style: italic; }
-        .ai-bubble strong { color: #f8fafc; font-weight: 700; }
-        .ai-bubble blockquote { border-left: 4px solid #6366f1; padding-left: 1rem; color: #94a3b8; }
+        /* AI Markdown Colors */
+        .msg-ai em { color: #c084fc !important; font-style: italic; } /* Actions = Purple */
+        .msg-ai strong { color: #f8fafc !important; font-weight: 700; }
+        .msg-ai p { color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.6; }
+        .msg-ai p:last-child { margin-bottom: 0; }
+        .msg-ai blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; color: #94a3b8; font-style: italic; }
 
-        /* 4. LOADER & UTILS */
-        #loading-screen {
-            position: fixed; inset: 0; background: #0f172a; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease;
-        }
+        /* --- 3. SCROLLBARS --- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; }
+
+        /* --- 4. UTILS --- */
         .cursor-blink {
             display: inline-block; width: 6px; height: 16px; background-color: #c084fc;
             animation: blink 1s step-end infinite; vertical-align: middle;
         }
         @keyframes blink { 50% { opacity: 0; } }
-
-        /* PC Layout Fix: Ensure content isn't hidden behind footer */
-        .padding-safe-bottom {
-            padding-bottom: 180px; /* Huge padding for mobile */
+        
+        /* LAYOUT FIX: Ensures input bar never covers text */
+        .safe-area-bottom {
+            padding-bottom: 160px; /* Mobile safe area */
         }
         @media (min-width: 768px) {
-            .padding-safe-bottom {
-                padding-bottom: 220px; /* Even bigger for PC */
-            }
+            .safe-area-bottom { padding-bottom: 120px; } /* PC safe area */
         }
     </style>
 </head>
-<body class="h-full antialiased overflow-hidden selection:bg-purple-500 selection:text-white">
+<body class="h-full antialiased overflow-hidden flex flex-col md:flex-row">
 
-    <div id="loading-screen">
-        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div class="text-sm font-medium text-blue-400 animate-pulse">Loading Interface v3...</div>
+    <div id="loader" class="fixed inset-0 bg-midnight-900 z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div class="text-blue-400 font-bold tracking-widest animate-pulse">SYSTEM INITIALIZING</div>
     </div>
 
-    <div id="app" class="h-full flex flex-col md:flex-row opacity-0 transition-opacity duration-300">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-midnight-900 border-r border-white/5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 flex flex-col shadow-2xl">
+        <div class="p-4 border-b border-white/5 bg-midnight-900/50 backdrop-blur">
+            <button onclick="createNewChat()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 transition-all">
+                <i class="ph ph-plus-circle text-xl"></i> New Roleplay
+            </button>
+        </div>
         
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden backdrop-blur-sm"></div>
+        <div id="chat-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+        
+        <div class="p-4 border-t border-white/5 bg-midnight-950/50">
+            <button onclick="openModal('settings-modal')" class="w-full py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-3 px-3 transition-colors">
+                <i class="ph ph-gear text-lg"></i> Settings & API
+            </button>
+        </div>
+    </aside>
 
-        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-[#0f172a] border-r border-white/10 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 flex flex-col h-full shadow-2xl">
-            <div class="p-4 border-b border-white/5">
-                <button id="new-chat-btn" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-900/20 text-sm font-medium text-white">
-                    <i class="ph ph-plus text-lg"></i><span>New Chat</span>
-                </button>
-            </div>
-            <div class="flex-1 overflow-y-auto px-2 py-2 space-y-1" id="chat-history-list"></div>
-            <div class="p-4 border-t border-white/10 bg-[#020617]/30">
-                 <button id="settings-btn" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                    <i class="ph ph-gear text-lg"></i><span>Settings</span>
-                </button>
-            </div>
-        </aside>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/80 z-40 hidden md:hidden backdrop-blur-sm"></div>
 
-        <main class="flex-1 flex flex-col h-full relative w-full bg-[#020617]/50">
-            
-            <header class="md:hidden flex items-center justify-between p-3 border-b border-white/10 bg-[#0f172a]/90 backdrop-blur z-20 absolute top-0 left-0 right-0">
-                <button id="mobile-menu-btn" class="p-2 text-gray-300"><i class="ph ph-list text-2xl"></i></button>
-                <span class="font-semibold text-gray-200">Universal AI</span>
-                <button id="new-chat-mobile" class="p-2 text-gray-300"><i class="ph ph-plus text-xl"></i></button>
-            </header>
+    <main class="flex-1 flex flex-col h-full relative w-full bg-midnight-800/50">
+        
+        <header class="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-midnight-900/90 backdrop-blur z-30 absolute top-0 w-full">
+            <button onclick="toggleSidebar()" class="text-gray-300"><i class="ph ph-list text-2xl"></i></button>
+            <span class="font-bold text-gray-100 tracking-wide">Universal AI</span>
+            <button onclick="createNewChat()" class="text-gray-300"><i class="ph ph-plus text-xl"></i></button>
+        </header>
 
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 space-y-6 scroll-smooth padding-safe-bottom">
-                <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50 min-h-[50vh]">
-                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg shadow-purple-500/30">
-                        <i class="ph ph-sparkle"></i>
+        <div id="chat-container" class="flex-1 overflow-y-auto px-4 md:px-0 pt-20 md:pt-0 scroll-smooth">
+            <div class="max-w-4xl mx-auto min-h-full flex flex-col justify-end safe-area-bottom">
+                
+                <div id="welcome-screen" class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
+                    <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center text-4xl text-white shadow-2xl mb-6">
+                        <i class="ph ph-mask-happy"></i>
                     </div>
-                    <h2 class="text-2xl font-semibold text-gray-200">Ready to Roleplay</h2>
-                    <p class="text-sm text-gray-400 max-w-md">Configure your persona and model to start.</p>
+                    <h1 class="text-3xl font-bold text-white mb-2">Unrestricted Interface</h1>
+                    <p class="text-gray-400 max-w-sm">No filters. No boundaries.<br>Configure your API Key and Persona to begin.</p>
                 </div>
+
+                <div id="messages-list" class="space-y-6 pb-4"></div>
+                
+                <div id="streaming-placeholder" class="hidden w-full max-w-3xl pr-4 md:pr-12">
+                     <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex-shrink-0 flex items-center justify-center text-white animate-pulse"><i class="ph ph-lightning-fill"></i></div>
+                        <div class="prose prose-invert min-w-0 flex-1" id="streaming-content"></div>
+                    </div>
+                </div>
+
             </div>
+        </div>
 
-            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#020617] via-[#0f172a] to-transparent pt-16 pb-6 px-4 md:px-8 z-10 pointer-events-none">
-                <div class="max-w-4xl mx-auto relative pointer-events-auto">
+        <div class="absolute bottom-0 left-0 right-0 z-30 pointer-events-none">
+            <div class="h-24 bg-gradient-to-t from-midnight-900 via-midnight-900/90 to-transparent"></div>
+            
+            <div class="bg-midnight-900 pb-6 pt-2 px-4 md:px-8 pointer-events-auto">
+                <div class="max-w-4xl mx-auto relative">
                     
-                    <div id="status-bar" class="absolute -top-8 left-0 text-xs text-blue-400 hidden flex items-center gap-2">
-                        <i class="ph ph-spinner animate-spin"></i><span class="animate-pulse">Writing...</span>
-                    </div>
-
-                    <div id="commands-menu" class="hidden absolute bottom-full left-0 mb-3 w-64 bg-[#1e293b] border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-20 backdrop-blur-md">
-                        <div class="p-2 border-b border-gray-700 bg-black/20 text-xs font-bold text-gray-400 uppercase tracking-wider">Persona System</div>
-                        <button onclick="window.openPersonaModal()" class="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-blue-600/50 transition-colors flex items-center gap-3">
-                            <i class="ph ph-users text-lg text-blue-400"></i> Manage Personas
+                    <div id="commands-menu" class="hidden absolute bottom-full left-0 mb-4 w-64 bg-midnight-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl">
+                        <div class="p-3 bg-black/20 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">Roleplay Tools</div>
+                        <button onclick="openModal('persona-modal'); toggleCommands()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center gap-3 text-sm text-gray-200">
+                            <i class="ph ph-users text-blue-400 text-lg"></i> Manage Personas
                         </button>
-                        <button onclick="window.triggerImpersonate()" class="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-purple-600/50 transition-colors flex items-center gap-3 border-t border-gray-700">
-                            <i class="ph ph-mask-happy text-lg text-purple-400"></i> Impersonate Me
+                        <button onclick="triggerImpersonate()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center gap-3 text-sm text-gray-200 border-t border-white/5">
+                            <i class="ph ph-magic-wand text-purple-400 text-lg"></i> Impersonate Me
                         </button>
                     </div>
 
-                    <div class="relative bg-[#1e293b]/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl shadow-black/50 focus-within:border-blue-500/50 transition-all flex items-end">
-                        <button onclick="window.toggleCommandsMenu()" class="p-4 text-gray-400 hover:text-white transition-colors">
-                            <i class="ph ph-list-plus text-xl"></i>
+                    <div class="flex items-end gap-2 bg-midnight-800/50 backdrop-blur-md border border-white/10 rounded-2xl p-2 shadow-xl focus-within:border-blue-500/50 transition-all">
+                        <button onclick="toggleCommands()" class="p-3 text-gray-400 hover:text-white transition-colors rounded-xl hover:bg-white/5 shrink-0">
+                            <i class="ph ph-list text-xl"></i>
                         </button>
-
-                        <textarea id="user-input" rows="1" class="w-full bg-transparent border-0 px-2 py-4 text-gray-100 placeholder-gray-500 focus:ring-0 resize-none max-h-48 overflow-y-auto" placeholder="Type a message..." style="min-height: 56px;"></textarea>
                         
-                        <div class="flex items-center gap-1 pr-2 pb-2">
-                            <button onclick="window.continueChat()" title="Continue" class="p-2 text-gray-400 hover:text-green-400 hover:bg-white/5 rounded-lg transition-all">
+                        <textarea id="user-input" rows="1" class="w-full bg-transparent border-0 text-white placeholder-gray-500 focus:ring-0 resize-none py-3 max-h-48" placeholder="Type a message..." style="min-height: 48px;"></textarea>
+                        
+                        <div class="flex items-center gap-1 shrink-0 pb-1">
+                            <button onclick="continueChat()" title="Continue Story" class="p-2 text-gray-400 hover:text-green-400 hover:bg-white/5 rounded-lg transition-all">
                                 <i class="ph ph-arrow-fat-lines-right text-xl"></i>
                             </button>
-                            <button id="send-btn" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md transition-all">
+                            <button onclick="sendMessage()" id="send-btn" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-600/20 transition-all">
                                 <i class="ph ph-paper-plane-right text-lg"></i>
                             </button>
                         </div>
                     </div>
-                    
-                    <div class="text-center mt-2 flex justify-between px-2">
-                        <span id="persona-indicator" class="text-[10px] text-blue-400 font-medium opacity-0 transition-opacity">Playing as: User</span>
-                        <span class="text-[10px] text-gray-600">v3.0 PC Compatible</span>
+
+                    <div class="flex justify-between items-center px-2 mt-2">
+                        <span id="persona-indicator" class="text-[10px] uppercase font-bold text-blue-400 tracking-wider opacity-0">User</span>
+                        <span id="status-text" class="text-[10px] text-gray-600 font-mono hidden">GENERATING...</span>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
-    <div id="settings-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="settings-backdrop"></div>
-        <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-[#1e293b] w-full max-w-md rounded-2xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
-                <div class="p-5 border-b border-gray-700 flex justify-between items-center">
-                    <h3 class="font-semibold text-lg text-white">Settings</h3>
-                    <button id="close-settings" class="text-gray-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-midnight-800 w-full max-w-md rounded-2xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-white/5 flex justify-between items-center">
+                <h3 class="font-bold text-white">Connection Settings</h3>
+                <button onclick="closeModal('settings-modal')" class="text-gray-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-5 overflow-y-auto">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-500 uppercase">OpenRouter API Key</label>
+                    <input type="password" id="api-key" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-colors" placeholder="sk-or-...">
                 </div>
-                <div class="p-5 overflow-y-auto space-y-5">
-                    <div class="space-y-2">
-                        <label class="text-xs font-semibold uppercase text-gray-500">API Key</label>
-                        <input type="password" id="api-key-input" class="w-full p-3 bg-[#0f172a] border border-gray-700 rounded-lg text-white outline-none focus:border-blue-500" placeholder="sk-or-...">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-xs font-semibold uppercase text-gray-500">Model ID</label>
-                        <input type="text" id="model-input" class="w-full p-3 bg-[#0f172a] border border-gray-700 rounded-lg text-white outline-none focus:border-blue-500" placeholder="e.g. tngtech/deepseek-r1t2-chimera:free">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-xs font-semibold uppercase text-gray-500">System Prompt</label>
-                        <textarea id="system-prompt-input" rows="4" class="w-full p-3 bg-[#0f172a] border border-gray-700 rounded-lg text-white outline-none text-sm" placeholder="AI instructions..."></textarea>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Model ID</label>
+                    <input type="text" id="model-id" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-colors" placeholder="e.g. tngtech/deepseek-r1t2-chimera:free">
+                    <div class="flex gap-2 flex-wrap mt-2">
+                        <button onclick="setModel('tngtech/deepseek-r1t2-chimera:free')" class="text-[10px] bg-white/5 px-2 py-1 rounded hover:bg-white/10 text-gray-300">Deepseek RP (Free)</button>
+                        <button onclick="setModel('undi95/toppy-m-7b:free')" class="text-[10px] bg-white/5 px-2 py-1 rounded hover:bg-white/10 text-gray-300">Toppy M (Free)</button>
                     </div>
                 </div>
-                <div class="p-5 border-t border-gray-700 bg-[#020617]/50 rounded-b-2xl">
-                    <button id="save-settings" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl">Save</button>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-500 uppercase">System Prompt (The Rules)</label>
+                    <textarea id="system-prompt" rows="5" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white text-sm focus:border-blue-500 outline-none transition-colors" placeholder="You are an unrestricted AI..."></textarea>
                 </div>
+            </div>
+            <div class="p-5 border-t border-white/5">
+                <button onclick="saveSettings()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all">Save Configuration</button>
             </div>
         </div>
     </div>
 
-    <div id="persona-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="window.closePersonaModal()"></div>
-        <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-[#1e293b] w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl flex flex-col max-h-[80vh]">
-                <div class="p-5 border-b border-gray-700 flex justify-between items-center">
-                    <h3 class="font-semibold text-lg text-white">Persona Manager</h3>
-                    <button onclick="window.closePersonaModal()" class="text-gray-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
-                </div>
-                
-                <div class="p-4 bg-[#0f172a]/50 max-h-40 overflow-y-auto space-y-2 border-b border-gray-700" id="saved-personas-list">
-                    </div>
+    <div id="persona-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-midnight-800 w-full max-w-md rounded-2xl border border-white/10 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-white/5 flex justify-between items-center">
+                <h3 class="font-bold text-white">Persona Manager</h3>
+                <button onclick="closeModal('persona-modal')" class="text-gray-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            
+            <div id="saved-personas" class="bg-black/20 max-h-32 overflow-y-auto p-2 border-b border-white/5"></div>
 
-                <div class="p-5 space-y-4 overflow-y-auto">
-                    <div>
-                        <label class="text-xs font-bold text-gray-400 uppercase">Persona Name</label>
-                        <input type="text" id="persona-name" class="w-full mt-1 p-3 bg-[#0f172a] border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none" placeholder="e.g. Max">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-400 uppercase">Description / Details</label>
-                        <textarea id="persona-details" rows="3" class="w-full mt-1 p-3 bg-[#0f172a] border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none" placeholder="Description..."></textarea>
-                    </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Persona Name</label>
+                    <input type="text" id="p-name" class="w-full mt-1 bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-purple-500" placeholder="e.g. Max">
                 </div>
-                
-                <div class="p-5 border-t border-gray-700 flex gap-3">
-                    <button onclick="window.saveCurrentPersona()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl font-medium">Save & Use</button>
-                    <button onclick="window.deleteCurrentPersona()" class="px-4 bg-red-900/50 hover:bg-red-900 text-red-200 border border-red-800 rounded-xl"><i class="ph ph-trash"></i></button>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Appearance & Personality</label>
+                    <textarea id="p-details" rows="4" class="w-full mt-1 bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none focus:border-purple-500" placeholder="e.g. 6ft tall, sarcastic, wears a leather jacket..."></textarea>
                 </div>
+            </div>
+            
+            <div class="p-5 border-t border-white/5 flex gap-3">
+                <button onclick="savePersona()" class="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl">Save & Use</button>
+                <button onclick="deletePersona()" class="px-4 py-3 bg-red-900/30 text-red-400 border border-red-900/50 rounded-xl hover:bg-red-900/50"><i class="ph ph-trash text-xl"></i></button>
             </div>
         </div>
     </div>
 
     <script>
-        // 1. GLOBAL STATE
+        // --- STATE MANAGEMENT ---
         const state = {
-            chats: [], 
-            currentChatId: null,
-            settings: {
-                apiKey: '',
-                model: 'tngtech/deepseek-r1t2-chimera:free', 
-                systemPrompt: '',
-                theme: 'dark'
-            },
-            // Multi-Persona Update
-            currentPersona: { name: "User", details: "" },
-            savedPersonas: [], // Array of persona objects
+            chats: [],
+            activeChat: null,
+            settings: { apiKey: '', model: 'tngtech/deepseek-r1t2-chimera:free', system: '' },
+            persona: { name: 'User', details: '' },
+            savedPersonas: [],
             isGenerating: false
         };
 
-        // 2. MARKDOWN CONFIG
-        function initMarkdown() {
-            if (typeof marked !== 'undefined') {
-                marked.use({
-                    gfm: true,
-                    breaks: true,
-                    highlight: function(code, lang) {
-                        return (typeof highlight !== 'undefined') 
-                            ? highlight.highlight(code, { language: highlight.getLanguage(lang) ? lang : 'plaintext' }).value 
-                            : code;
-                    }
-                });
-            }
-        }
-
-        // 3. PERSONA LOGIC (IMPROVED)
-        window.openPersonaModal = function() {
-            document.getElementById('persona-modal').classList.remove('hidden');
-            document.getElementById('commands-menu').classList.add('hidden');
-            renderSavedPersonas();
-            // Fill inputs with current
-            document.getElementById('persona-name').value = state.currentPersona.name || "";
-            document.getElementById('persona-details').value = state.currentPersona.details || "";
-        };
-
-        window.closePersonaModal = function() {
-            document.getElementById('persona-modal').classList.add('hidden');
-        };
-
-        function renderSavedPersonas() {
-            const list = document.getElementById('saved-personas-list');
-            list.innerHTML = '';
-            if (state.savedPersonas.length === 0) {
-                list.innerHTML = '<div class="text-xs text-gray-500 text-center py-2">No saved personas</div>';
-                return;
-            }
-            state.savedPersonas.forEach((p, idx) => {
-                const item = document.createElement('div');
-                item.className = "flex justify-between items-center p-2 rounded hover:bg-white/5 cursor-pointer group";
-                item.innerHTML = `
-                    <span class="text-sm font-medium text-gray-300">${escapeHtml(p.name)}</span>
-                    <i class="ph ph-caret-right text-gray-500 opacity-0 group-hover:opacity-100"></i>
-                `;
-                item.onclick = () => loadPersonaIntoInputs(idx);
-                list.appendChild(item);
-            });
-        }
-
-        function loadPersonaIntoInputs(idx) {
-            const p = state.savedPersonas[idx];
-            document.getElementById('persona-name').value = p.name;
-            document.getElementById('persona-details').value = p.details;
-        }
-
-        window.saveCurrentPersona = function() {
-            const name = document.getElementById('persona-name').value.trim() || "User";
-            const details = document.getElementById('persona-details').value.trim();
-            
-            // Update Current
-            state.currentPersona = { name, details };
-            
-            // Check if exists in saved, if not add
-            const existingIdx = state.savedPersonas.findIndex(p => p.name === name);
-            if (existingIdx >= 0) {
-                state.savedPersonas[existingIdx] = state.currentPersona;
-            } else {
-                state.savedPersonas.push(state.currentPersona);
-            }
-
-            updatePersonaIndicator();
-            saveState();
-            window.closePersonaModal();
-        };
-
-        window.deleteCurrentPersona = function() {
-            const name = document.getElementById('persona-name').value.trim();
-            if (!name) return;
-            if(!confirm(`Delete persona "${name}"?`)) return;
-            
-            state.savedPersonas = state.savedPersonas.filter(p => p.name !== name);
-            // Reset current if we deleted it
-            if (state.currentPersona.name === name) {
-                state.currentPersona = { name: "User", details: "" };
-                document.getElementById('persona-name').value = "User";
-                document.getElementById('persona-details').value = "";
-            }
-            saveState();
-            renderSavedPersonas();
-            updatePersonaIndicator();
-        };
-
-        function updatePersonaIndicator() {
-            const el = document.getElementById('persona-indicator');
-            el.textContent = `Playing as: ${state.currentPersona.name}`;
-            el.classList.remove('opacity-0');
-        }
-
-        // 4. MAIN APP LOGIC
-        const elements = {
-            app: document.getElementById('app'),
-            loadingScreen: document.getElementById('loading-screen'),
-            chatContainer: document.getElementById('chat-container'),
-            userInput: document.getElementById('user-input'),
-            sendBtn: document.getElementById('send-btn'),
-            // ... (other mapping implicitly handled by id lookups)
-        };
-
+        // --- INIT ---
         document.addEventListener('DOMContentLoaded', () => {
-            initMarkdown();
             loadState();
-            renderChats();
-            updatePersonaIndicator();
-
-            if (state.chats.length === 0) createNewChat(false);
+            initMarkdown();
+            renderChatList();
+            
+            // Auto-create chat if empty
+            if (state.chats.length === 0) createNewChat();
             else loadChat(state.chats[0].id);
 
+            updatePersonaUI();
+            
+            // Hide Loader
             setTimeout(() => {
-                elements.loadingScreen.style.opacity = '0';
-                setTimeout(() => {
-                    elements.loadingScreen.style.display = 'none';
-                    elements.app.classList.remove('opacity-0');
-                }, 500);
-            }, 800);
+                document.getElementById('loader').classList.add('opacity-0', 'pointer-events-none');
+            }, 500);
         });
 
-        // Event Listeners
-        window.toggleCommandsMenu = () => document.getElementById('commands-menu').classList.toggle('hidden');
-        
-        elements.sendBtn.addEventListener('click', () => sendMessage(false));
-        elements.userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(false);
-            }
-            resizeInput(e.target);
-        });
-        
-        // Listeners for Sidebar & Settings
-        document.getElementById('new-chat-btn').onclick = () => createNewChat();
-        document.getElementById('new-chat-mobile').onclick = () => createNewChat();
-        document.getElementById('mobile-menu-btn').onclick = () => {
-            document.getElementById('sidebar').classList.remove('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.remove('hidden');
-        };
-        document.getElementById('sidebar-overlay').onclick = () => {
-            document.getElementById('sidebar').classList.add('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.add('hidden');
-        };
-        
-        // Settings Modal Listeners
-        const setModal = document.getElementById('settings-modal');
-        document.getElementById('settings-btn').onclick = () => {
-             document.getElementById('api-key-input').value = state.settings.apiKey;
-             document.getElementById('model-input').value = state.settings.model;
-             document.getElementById('system-prompt-input').value = state.settings.systemPrompt;
-             setModal.classList.remove('hidden');
-        };
-        document.getElementById('close-settings').onclick = () => setModal.classList.add('hidden');
-        document.getElementById('settings-backdrop').onclick = () => setModal.classList.add('hidden');
-        document.getElementById('save-settings').onclick = () => {
-            state.settings.apiKey = document.getElementById('api-key-input').value.trim();
-            state.settings.model = document.getElementById('model-input').value.trim();
-            state.settings.systemPrompt = document.getElementById('system-prompt-input').value.trim();
-            saveState();
-            setModal.classList.add('hidden');
-        };
-
-        // CORE FUNCTIONS
-        function createNewChat(switchToIt = true) {
-            const newChat = { id: Date.now().toString(), title: 'New Chat', messages: [] };
-            state.chats.unshift(newChat);
-            saveState();
-            renderChats();
-            if (switchToIt) loadChat(newChat.id);
-        }
-
-        function loadChat(chatId) {
-            state.currentChatId = chatId;
-            renderChats();
-            renderMessages();
-            // Close mobile sidebar
-            if(window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('-translate-x-full');
-                document.getElementById('sidebar-overlay').classList.add('hidden');
-            }
-        }
-
-        function renderChats() {
-            const list = document.getElementById('chat-history-list');
-            list.innerHTML = '';
-            state.chats.forEach(chat => {
-                const div = document.createElement('div');
-                const isActive = chat.id === state.currentChatId;
-                div.className = `flex justify-between items-center p-3 rounded-lg cursor-pointer text-sm mb-1 ${isActive ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:bg-white/5'}`;
-                div.innerHTML = `
-                    <div class="truncate flex-1 font-medium">${escapeHtml(chat.title)}</div>
-                    <button class="ml-2 hover:text-red-400 p-1" onclick="deleteChat('${chat.id}', event)"><i class="ph ph-trash"></i></button>
-                `;
-                div.onclick = () => loadChat(chat.id);
-                list.appendChild(div);
-            });
-        }
-
-        window.deleteChat = function(id, e) {
-            e.stopPropagation();
-            if(!confirm('Delete chat?')) return;
-            state.chats = state.chats.filter(c => c.id !== id);
-            if(state.chats.length === 0) createNewChat(false);
-            else if(state.currentChatId === id) state.currentChatId = state.chats[0].id;
-            saveState(); renderChats(); renderMessages();
-        };
-
-        function renderMessages() {
-            const chat = state.chats.find(c => c.id === state.currentChatId);
-            if (!chat) return;
-            
-            const container = elements.chatContainer;
-            container.innerHTML = ''; // Clear
-            
-            if (chat.messages.length === 0) {
-                document.getElementById('welcome-message').style.display = 'flex';
-                container.appendChild(document.getElementById('welcome-message'));
-            } else {
-                document.getElementById('welcome-message').style.display = 'none';
-                chat.messages.forEach((msg, index) => appendMessageToDOM(msg.role, msg.content, index));
-            }
-            scrollToBottom();
-        }
-
-        function appendMessageToDOM(role, content, index) {
-            const isUser = role === 'user';
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} group`;
-
-            const bubble = document.createElement('div');
-            
-            if (isUser) {
-                // USER MESSAGE (Rich Text)
-                bubble.className = 'user-bubble relative max-w-[85%] md:max-w-[70%] px-5 py-3.5 text-sm md:text-base';
-                
-                // Content parsed as Markdown for colors
-                const textDiv = document.createElement('div');
-                textDiv.className = 'prose prose-invert max-w-none'; // prose-invert forces white text base
-                textDiv.innerHTML = DOMPurify.sanitize(marked.parse(content));
-                bubble.appendChild(textDiv);
-
-                // Edit Button
-                const editBtn = document.createElement('button');
-                editBtn.className = 'absolute -left-10 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity';
-                editBtn.innerHTML = '<i class="ph ph-pencil-simple text-lg"></i>';
-                editBtn.onclick = () => window.editMessage(index);
-                bubble.appendChild(editBtn);
-
-            } else {
-                // AI MESSAGE
-                bubble.className = 'ai-bubble w-full max-w-3xl pr-4 md:pr-12 p-6';
-                const layout = document.createElement('div');
-                layout.className = 'flex gap-4';
-                
-                const avatar = document.createElement('div');
-                avatar.className = 'w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center text-white text-xs shadow-lg mt-1';
-                avatar.innerHTML = '<i class="ph ph-sparkle-fill"></i>';
-                
-                const textContent = document.createElement('div');
-                textContent.className = 'prose prose-invert max-w-none min-w-0 flex-1';
-                textContent.innerHTML = DOMPurify.sanitize(marked.parse(content));
-                
-                layout.appendChild(avatar);
-                layout.appendChild(textContent);
-                bubble.appendChild(layout);
-            }
-
-            wrapper.appendChild(bubble);
-            elements.chatContainer.appendChild(wrapper);
-            
-            // Syntax Highlight
-            bubble.querySelectorAll('pre code').forEach(block => {
-                if(typeof highlight !== 'undefined') highlight.highlightElement(block);
-            });
-        }
-
-        window.editMessage = function(index) {
-            const chat = state.chats.find(c => c.id === state.currentChatId);
-            if (!chat || !confirm('Edit message? This removes subsequent messages.')) return;
-            
-            const oldText = chat.messages[index].content;
-            const input = elements.userInput;
-            input.value = oldText;
-            resizeInput(input);
-            input.focus();
-            
-            chat.messages = chat.messages.slice(0, index);
-            saveState(); renderMessages();
-        };
+        // --- CORE FUNCTIONS ---
 
         async function sendMessage(isContinue = false) {
-            const text = elements.userInput.value.trim();
-            if (!isContinue && (!text || state.isGenerating)) return;
-            if (!state.settings.apiKey) return alert("API Key Missing");
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
 
-            const chat = state.chats.find(c => c.id === state.currentChatId);
+            if (!isContinue && (!text || state.isGenerating)) return;
+            if (!state.settings.apiKey) return alert("Please enter your API Key in Settings!");
+
+            const chat = state.chats.find(c => c.id === state.activeChat);
             
-            // Add User Message if not continue
+            // 1. Add User Message
             if (!isContinue) {
                 chat.messages.push({ role: 'user', content: text });
-                appendMessageToDOM('user', text, chat.messages.length - 1);
-                elements.userInput.value = '';
-                resizeInput(elements.userInput);
+                appendMessage('user', text, chat.messages.length - 1);
+                input.value = '';
+                resizeInput(input);
             }
+
+            saveState();
+            scrollToBottom();
             
-            saveState(); scrollToBottom();
-
-            // Prepare UI for AI Response
+            // 2. Prepare AI Stream
             state.isGenerating = true;
-            document.getElementById('status-bar').classList.remove('hidden');
-            document.getElementById('send-btn').disabled = true;
-
-            // Stream Placeholder
-            const wrapper = document.createElement('div');
-            wrapper.className = 'flex w-full mb-6 justify-start';
-            wrapper.innerHTML = `
-                <div class="w-full max-w-3xl pr-4 md:pr-12">
-                    <div class="flex gap-4">
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center text-white text-xs animate-pulse mt-1">
-                            <i class="ph ph-lightning-fill"></i>
-                        </div>
-                        <div class="prose prose-invert min-w-0 flex-1" id="streaming-content"><span class="cursor-blink"></span></div>
-                    </div>
-                </div>`;
-            elements.chatContainer.appendChild(wrapper);
-            const streamDiv = wrapper.querySelector('#streaming-content');
+            toggleStatus(true);
+            
+            const streamContainer = document.getElementById('streaming-placeholder');
+            const streamContent = document.getElementById('streaming-content');
+            streamContainer.classList.remove('hidden');
+            streamContent.innerHTML = '<span class="cursor-blink"></span>';
             scrollToBottom();
 
-            let fullAiResponse = "";
-            
-            try {
-                // API Logic
-                const apiMessages = [];
-                let sys = state.settings.systemPrompt || "";
-                if (state.currentPersona.name !== "User") {
-                    sys += `\n\n[USER PERSONA: ${state.currentPersona.name}]\n[DETAILS: ${state.currentPersona.details}]\n[INSTRUCTION: Respond directly to ${state.currentPersona.name}.]`;
-                }
-                if (sys) apiMessages.push({ role: 'system', content: sys });
-                
-                const limit = isContinue ? 20 : 15;
-                apiMessages.push(...chat.messages.slice(-limit));
+            let fullResponse = "";
 
+            try {
+                // 3. Build API Payload
+                const history = chat.messages.slice(-15); // Context limit
+                const systemMsg = buildSystemPrompt();
+                
+                const messages = [{ role: 'system', content: systemMsg }, ...history];
+
+                // 4. FETCH (FIXED HEADERS FOR ANDROID)
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${state.settings.apiKey}`,
+                        "Authorization": `Bearer ${state.settings.apiKey.trim()}`,
                         "Content-Type": "application/json",
-                        "HTTP-Referer": window.location.href,
-                        "X-Title": "Universal AI Interface"
+                        // CRITICAL FIX: Removed window.location.href to prevent Android crash
+                        "HTTP-Referer": "https://github.com/universal-ai", 
+                        "X-Title": "Universal AI V4"
                     },
-                    body: JSON.stringify({ model: state.settings.model, messages: apiMessages, stream: true })
+                    body: JSON.stringify({
+                        model: state.settings.model,
+                        messages: messages,
+                        stream: true
+                    })
                 });
 
+                if (!resp.ok) throw new Error(`API Error ${resp.status}`);
+
+                // 5. Stream Reader
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder();
+
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
+                    
                     const chunk = decoder.decode(value, { stream: true });
-                    chunk.split("\n").forEach(line => {
-                        if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                             try {
-                                const delta = JSON.parse(line.slice(6)).choices[0]?.delta?.content || "";
-                                fullAiResponse += delta;
-                                streamDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullAiResponse)) + '<span class="cursor-blink"></span>';
+                                const json = JSON.parse(line.substring(6));
+                                const delta = json.choices[0]?.delta?.content || "";
+                                fullResponse += delta;
+                                
+                                // Live Render
+                                streamContent.innerHTML = DOMPurify.sanitize(marked.parse(fullResponse));
                                 scrollToBottom();
-                            } catch (e) {}
+                            } catch (e) { /* ignore parse errors */ }
                         }
-                    });
+                    }
                 }
 
-            } catch (e) {
-                fullAiResponse += `\n\n**Error:** ${e.message}`;
-                streamDiv.innerHTML = marked.parse(fullAiResponse);
+            } catch (err) {
+                fullResponse += `\n\n**Error:** ${err.message}`;
+                streamContent.innerHTML = marked.parse(fullResponse);
             } finally {
-                streamDiv.querySelector('.cursor-blink')?.remove();
-                chat.messages.push({ role: 'assistant', content: fullAiResponse });
-                if (chat.messages.length === 2) {
-                     // Auto-Title
-                     const t = chat.messages[0].content.slice(0,30);
-                     chat.title = t; renderChats();
-                }
-                saveState();
+                // 6. Finalize
                 state.isGenerating = false;
-                document.getElementById('status-bar').classList.add('hidden');
-                document.getElementById('send-btn').disabled = false;
-                // Highlight final block
-                streamDiv.querySelectorAll('pre code').forEach(b => highlight.highlightElement(b));
+                toggleStatus(false);
+                streamContainer.classList.add('hidden');
+                
+                chat.messages.push({ role: 'assistant', content: fullResponse });
+                appendMessage('assistant', fullResponse);
+                
+                // Auto Title
+                if (chat.messages.length === 2) {
+                    chat.title = text.slice(0, 30);
+                    renderChatList();
+                }
+                
+                saveState();
             }
         }
 
-        // UTILS
-        window.continueChat = () => sendMessage(true);
-        window.triggerImpersonate = () => {
-             document.getElementById('commands-menu').classList.add('hidden');
-             const input = elements.userInput;
-             input.placeholder = "Generating..."; input.disabled = true;
-             // Quick Impersonate Fetch
-             const chat = state.chats.find(c => c.id === state.currentChatId);
-             const msgs = chat ? [...chat.messages.slice(-10)] : [];
-             msgs.push({role:'system', content: `[SYSTEM: Write the next response for user "${state.currentPersona.name}" based on details: "${state.currentPersona.details}". Output text only.]`});
-             
-             fetch("https://openrouter.ai/api/v1/chat/completions", {
-                 method:"POST",
-                 headers: {"Authorization": `Bearer ${state.settings.apiKey}`, "Content-Type": "application/json"},
-                 body: JSON.stringify({model: state.settings.model, messages: msgs})
-             })
-             .then(r => r.json())
-             .then(d => {
-                 input.value = d.choices[0].message.content;
-                 input.disabled = false; input.placeholder = "Type a message...";
-                 input.focus(); resizeInput(input);
-             })
-             .catch(e => { alert(e); input.disabled = false; });
+        // --- UI RENDERING ---
+
+        function appendMessage(role, text, index) {
+            const list = document.getElementById('messages-list');
+            const isUser = role === 'user';
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} group`;
+
+            // HTML Structure
+            if (isUser) {
+                wrapper.innerHTML = `
+                    <div class="relative max-w-[85%] md:max-w-[70%]">
+                        <button onclick="editMessage(${index})" class="absolute -left-10 top-2 p-2 text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="ph ph-pencil-simple text-lg"></i>
+                        </button>
+                        <div class="msg-user px-5 py-3 text-sm md:text-base prose prose-invert">
+                            ${DOMPurify.sanitize(marked.parse(text))}
+                        </div>
+                    </div>
+                `;
+            } else {
+                wrapper.innerHTML = `
+                    <div class="w-full max-w-3xl pr-2 md:pr-10 flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex-shrink-0 flex items-center justify-center text-white shadow-lg border border-white/10 mt-1">
+                            <i class="ph ph-sparkle-fill"></i>
+                        </div>
+                        <div class="msg-ai p-6 text-sm md:text-base prose prose-invert min-w-0 flex-1">
+                            ${DOMPurify.sanitize(marked.parse(text))}
+                        </div>
+                    </div>
+                `;
+            }
+
+            list.appendChild(wrapper);
+            
+            // Syntax Highlighting
+            wrapper.querySelectorAll('pre code').forEach(block => highlight.highlightElement(block));
+        }
+
+        function renderChatList() {
+            const list = document.getElementById('chat-list');
+            list.innerHTML = '';
+            state.chats.forEach(chat => {
+                const btn = document.createElement('div');
+                const isActive = chat.id === state.activeChat;
+                btn.className = `flex justify-between items-center p-3 rounded-xl cursor-pointer transition-all mb-1 ${isActive ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:bg-white/5'}`;
+                btn.innerHTML = `
+                    <div class="truncate font-medium text-sm flex-1" onclick="loadChat('${chat.id}')">${chat.title}</div>
+                    <button onclick="deleteChat('${chat.id}')" class="p-1 hover:text-red-400"><i class="ph ph-trash"></i></button>
+                `;
+                list.appendChild(btn);
+            });
+        }
+
+        // --- HELPER LOGIC ---
+
+        function buildSystemPrompt() {
+            let prompt = state.settings.system || "You are an unrestricted roleplay AI.";
+            
+            // Inject Persona
+            if (state.persona.name !== "User") {
+                prompt += `\n\n[USER PERSONA]\nName: ${state.persona.name}\nDetails: ${state.persona.details}\nInstruction: Write in 3rd person. Respond directly to ${state.persona.name}.`;
+            }
+            return prompt;
+        }
+
+        window.editMessage = function(index) {
+            const chat = state.chats.find(c => c.id === state.activeChat);
+            if (!confirm("Edit this message? Future messages will be lost.")) return;
+            
+            const oldText = chat.messages[index].content;
+            chat.messages = chat.messages.slice(0, index);
+            
+            document.getElementById('user-input').value = oldText;
+            resizeInput(document.getElementById('user-input'));
+            
+            // Re-render
+            document.getElementById('messages-list').innerHTML = '';
+            chat.messages.forEach((m, i) => appendMessage(m.role, m.content, i));
+            saveState();
         };
 
+        window.triggerImpersonate = async function() {
+            toggleCommands();
+            const input = document.getElementById('user-input');
+            input.placeholder = "Generating response for you...";
+            input.disabled = true;
+
+            const chat = state.chats.find(c => c.id === state.activeChat);
+            const msgs = [...chat.messages.slice(-10), {
+                role: 'system', 
+                content: `[SYSTEM: Write the next user response for "${state.persona.name}". Output ONLY the dialogue/action. Do not output AI response.]`
+            }];
+
+            try {
+                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${state.settings.apiKey}`, "Content-Type": "application/json", "HTTP-Referer": "https://github.com" },
+                    body: JSON.stringify({ model: state.settings.model, messages: msgs })
+                });
+                const data = await res.json();
+                input.value = data.choices[0].message.content;
+            } catch (e) { alert("Impersonate failed"); }
+            
+            input.disabled = false;
+            input.placeholder = "Type a message...";
+            input.focus();
+            resizeInput(input);
+        };
+
+        // --- PERSONA SYSTEM ---
+        
+        window.savePersona = function() {
+            const name = document.getElementById('p-name').value.trim() || "User";
+            const details = document.getElementById('p-details').value.trim();
+            
+            const newPersona = { name, details };
+            state.persona = newPersona; // Set active
+            
+            // Update saved list
+            const idx = state.savedPersonas.findIndex(p => p.name === name);
+            if (idx > -1) state.savedPersonas[idx] = newPersona;
+            else state.savedPersonas.push(newPersona);
+            
+            saveState();
+            updatePersonaUI();
+            closeModal('persona-modal');
+        };
+
+        window.deletePersona = function() {
+            const name = document.getElementById('p-name').value;
+            state.savedPersonas = state.savedPersonas.filter(p => p.name !== name);
+            if (state.persona.name === name) state.persona = { name: "User", details: "" };
+            saveState();
+            updatePersonaUI();
+        };
+
+        function updatePersonaUI() {
+            // Indicator
+            const ind = document.getElementById('persona-indicator');
+            ind.textContent = state.persona.name;
+            ind.classList.remove('opacity-0');
+            
+            // List in Modal
+            const list = document.getElementById('saved-personas');
+            list.innerHTML = state.savedPersonas.map(p => `
+                <div onclick="loadPersona('${p.name}')" class="p-2 hover:bg-white/10 cursor-pointer rounded flex justify-between text-sm text-gray-300">
+                    <span>${p.name}</span>
+                </div>
+            `).join('');
+            
+            // Inputs
+            document.getElementById('p-name').value = state.persona.name;
+            document.getElementById('p-details').value = state.persona.details;
+        }
+
+        window.loadPersona = function(name) {
+            const p = state.savedPersonas.find(x => x.name === name);
+            if (p) {
+                document.getElementById('p-name').value = p.name;
+                document.getElementById('p-details').value = p.details;
+            }
+        };
+
+        // --- BOILERPLATE UTILS ---
+
+        function createNewChat() {
+            const id = Date.now().toString();
+            state.chats.unshift({ id, title: 'New Roleplay', messages: [] });
+            loadChat(id);
+        }
+
+        function loadChat(id) {
+            state.activeChat = id;
+            document.getElementById('messages-list').innerHTML = '';
+            document.getElementById('welcome-screen').style.display = 'flex';
+            
+            const chat = state.chats.find(c => c.id === id);
+            if (chat.messages.length > 0) {
+                document.getElementById('welcome-screen').style.display = 'none';
+                chat.messages.forEach((m, i) => appendMessage(m.role, m.content, i));
+            }
+            
+            renderChatList();
+            saveState();
+            
+            // Mobile: Close sidebar
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        function deleteChat(id) {
+            if (!confirm("Delete this roleplay?")) return;
+            state.chats = state.chats.filter(c => c.id !== id);
+            if (state.chats.length === 0) createNewChat();
+            else loadChat(state.chats[0].id);
+        }
+
         function scrollToBottom() {
-            const c = elements.chatContainer;
-            c.scrollTop = c.scrollHeight;
+            const c = document.getElementById('chat-container');
+            // Force layout recalc
+            c.scrollTop = c.scrollHeight; 
+            setTimeout(() => c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' }), 50);
         }
-        function resizeInput(el) {
-            el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 192) + 'px';
-        }
-        function escapeHtml(t) { return t.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m])); }
-        function saveState() { localStorage.setItem('universal_ai_state_v3', JSON.stringify(state)); }
+
+        function saveState() { localStorage.setItem('univ_ai_v4', JSON.stringify(state)); }
         function loadState() {
-            const s = localStorage.getItem('universal_ai_state_v3');
+            const s = localStorage.getItem('univ_ai_v4');
             if (s) {
                 const p = JSON.parse(s);
                 state.chats = p.chats || [];
-                state.settings = {...state.settings, ...p.settings};
-                state.currentChatId = p.currentChatId;
+                state.settings = p.settings || state.settings;
                 state.savedPersonas = p.savedPersonas || [];
-                state.currentPersona = p.currentPersona || { name: "User", details: "" };
+                state.persona = p.persona || state.persona;
             }
+        }
+        function saveSettings() {
+            state.settings.apiKey = document.getElementById('api-key').value;
+            state.settings.model = document.getElementById('model-id').value;
+            state.settings.system = document.getElementById('system-prompt').value;
+            saveState();
+            closeModal('settings-modal');
+        }
+
+        // UI Toggles
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        };
+        window.toggleCommands = () => document.getElementById('commands-menu').classList.toggle('hidden');
+        window.openModal = (id) => {
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'settings-modal') {
+                document.getElementById('api-key').value = state.settings.apiKey;
+                document.getElementById('model-id').value = state.settings.model;
+                document.getElementById('system-prompt').value = state.settings.system;
+            }
+        };
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        window.setModel = (m) => document.getElementById('model-id').value = m;
+        window.continueChat = () => sendMessage(true);
+        window.resizeInput = (el) => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 150) + 'px'; };
+        document.getElementById('user-input').addEventListener('input', (e) => resizeInput(e.target));
+        
+        // Markdown Init
+        function initMarkdown() {
+            marked.use({ 
+                gfm: true, 
+                breaks: true,
+                highlight: (code, lang) => hljs.highlightAuto(code).value 
+            });
+        }
+        function toggleStatus(show) {
+            const el = document.getElementById('status-text');
+            if (show) { el.classList.remove('hidden'); el.classList.add('animate-pulse'); }
+            else { el.classList.add('hidden'); el.classList.remove('animate-pulse'); }
         }
     </script>
 </body>
