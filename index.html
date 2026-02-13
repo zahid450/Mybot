@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Universal AI - Roleplay V4</title>
+    <title>Universal AI - Stable V5</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -28,113 +28,86 @@
     </script>
 
     <style>
-        /* --- 1. CHUB-STYLE THEME --- */
+        /* --- THEME --- */
         body {
-            background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
-            background-attachment: fixed;
+            background: #020617; /* Solid dark background */
             color: #e2e8f0;
-            overscroll-behavior-y: none; /* Prevents pull-to-refresh on Android */
+            overscroll-behavior-y: none;
         }
 
-        /* --- 2. MESSAGE STYLING (THE IMPORTANT PART) --- */
-        
-        /* USER BUBBLE */
+        /* --- MESSAGE BUBBLES --- */
         .msg-user {
             background: linear-gradient(to right, #2563eb, #3b82f6);
             color: white;
             border-radius: 18px 18px 4px 18px;
             box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-            border: 1px solid rgba(255,255,255,0.1);
         }
-        /* User Markdown Colors */
-        .msg-user em { color: #fde047 !important; font-style: italic; opacity: 0.95; } /* Actions = Yellow */
+        .msg-user em { color: #fde047 !important; font-style: italic; opacity: 0.95; }
         .msg-user strong { color: #ffffff !important; font-weight: 800; }
-        .msg-user p { margin-bottom: 0.5rem; }
-        .msg-user p:last-child { margin-bottom: 0; }
+        .msg-user p { margin-bottom: 0.5rem; } .msg-user p:last-child { margin-bottom: 0; }
 
-        /* AI BUBBLE */
         .msg-ai {
-            background: rgba(15, 23, 42, 0.7); /* Dark Glass */
+            background: #1e293b;
             border: 1px solid rgba(255,255,255,0.05);
             border-radius: 18px 18px 18px 4px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        /* AI Markdown Colors */
-        .msg-ai em { color: #c084fc !important; font-style: italic; } /* Actions = Purple */
+        .msg-ai em { color: #c084fc !important; font-style: italic; }
         .msg-ai strong { color: #f8fafc !important; font-weight: 700; }
-        .msg-ai p { color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.6; }
-        .msg-ai p:last-child { margin-bottom: 0; }
+        .msg-ai p { color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.6; } .msg-ai p:last-child { margin-bottom: 0; }
         .msg-ai blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; color: #94a3b8; font-style: italic; }
 
-        /* --- 3. SCROLLBARS --- */
+        /* --- SCROLLBARS --- */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; }
 
-        /* --- 4. UTILS --- */
         .cursor-blink {
             display: inline-block; width: 6px; height: 16px; background-color: #c084fc;
             animation: blink 1s step-end infinite; vertical-align: middle;
         }
         @keyframes blink { 50% { opacity: 0; } }
-        
-        /* LAYOUT FIX: Ensures input bar never covers text */
-        .safe-area-bottom {
-            padding-bottom: 160px; /* Mobile safe area */
-        }
-        @media (min-width: 768px) {
-            .safe-area-bottom { padding-bottom: 120px; } /* PC safe area */
-        }
     </style>
 </head>
-<body class="h-full antialiased overflow-hidden flex flex-col md:flex-row">
-
-    <div id="loader" class="fixed inset-0 bg-midnight-900 z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div class="text-blue-400 font-bold tracking-widest animate-pulse">SYSTEM INITIALIZING</div>
-    </div>
+<body class="h-full antialiased flex flex-col md:flex-row overflow-hidden">
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-midnight-900 border-r border-white/5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 flex flex-col shadow-2xl">
-        <div class="p-4 border-b border-white/5 bg-midnight-900/50 backdrop-blur">
-            <button onclick="createNewChat()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 transition-all">
+        <div class="p-4 border-b border-white/5">
+            <button onclick="createNewChat()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
                 <i class="ph ph-plus-circle text-xl"></i> New Roleplay
             </button>
         </div>
-        
         <div id="chat-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
-        
-        <div class="p-4 border-t border-white/5 bg-midnight-950/50">
+        <div class="p-4 border-t border-white/5 bg-midnight-800">
             <button onclick="openModal('settings-modal')" class="w-full py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-3 px-3 transition-colors">
-                <i class="ph ph-gear text-lg"></i> Settings & API
+                <i class="ph ph-gear text-lg"></i> Settings
             </button>
         </div>
     </aside>
 
     <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/80 z-40 hidden md:hidden backdrop-blur-sm"></div>
 
-    <main class="flex-1 flex flex-col h-full relative w-full bg-midnight-800/50">
+    <main class="flex-1 flex flex-col h-full w-full bg-midnight-800 relative">
         
-        <header class="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-midnight-900/90 backdrop-blur z-30 absolute top-0 w-full">
+        <header class="md:hidden flex items-center justify-between p-4 bg-midnight-900 border-b border-white/5 shrink-0 z-30">
             <button onclick="toggleSidebar()" class="text-gray-300"><i class="ph ph-list text-2xl"></i></button>
-            <span class="font-bold text-gray-100 tracking-wide">Universal AI</span>
+            <span class="font-bold text-gray-100">Universal AI</span>
             <button onclick="createNewChat()" class="text-gray-300"><i class="ph ph-plus text-xl"></i></button>
         </header>
 
-        <div id="chat-container" class="flex-1 overflow-y-auto px-4 md:px-0 pt-20 md:pt-0 scroll-smooth">
-            <div class="max-w-4xl mx-auto min-h-full flex flex-col justify-end safe-area-bottom">
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-0 scroll-smooth">
+            <div class="max-w-4xl mx-auto min-h-full flex flex-col justify-end pb-4">
                 
                 <div id="welcome-screen" class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
                     <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center text-4xl text-white shadow-2xl mb-6">
                         <i class="ph ph-mask-happy"></i>
                     </div>
-                    <h1 class="text-3xl font-bold text-white mb-2">Unrestricted Interface</h1>
-                    <p class="text-gray-400 max-w-sm">No filters. No boundaries.<br>Configure your API Key and Persona to begin.</p>
+                    <h1 class="text-3xl font-bold text-white mb-2">Ready to Roleplay</h1>
+                    <p class="text-gray-400">Configure your API Key to begin.</p>
                 </div>
 
-                <div id="messages-list" class="space-y-6 pb-4"></div>
+                <div id="messages-list" class="space-y-6"></div>
                 
-                <div id="streaming-placeholder" class="hidden w-full max-w-3xl pr-4 md:pr-12">
+                <div id="streaming-placeholder" class="hidden w-full max-w-3xl pr-4 md:pr-12 mt-6">
                      <div class="flex gap-4">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex-shrink-0 flex items-center justify-center text-white animate-pulse"><i class="ph ph-lightning-fill"></i></div>
                         <div class="prose prose-invert min-w-0 flex-1" id="streaming-content"></div>
@@ -144,43 +117,39 @@
             </div>
         </div>
 
-        <div class="absolute bottom-0 left-0 right-0 z-30 pointer-events-none">
-            <div class="h-24 bg-gradient-to-t from-midnight-900 via-midnight-900/90 to-transparent"></div>
-            
-            <div class="bg-midnight-900 pb-6 pt-2 px-4 md:px-8 pointer-events-auto">
-                <div class="max-w-4xl mx-auto relative">
+        <div class="shrink-0 bg-midnight-900 border-t border-white/5 p-4 z-30 relative">
+            <div class="max-w-4xl mx-auto">
+                
+                <div id="commands-menu" class="hidden absolute bottom-full left-4 mb-2 w-64 bg-midnight-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+                    <div class="p-3 bg-black/20 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">Tools</div>
+                    <button onclick="openModal('persona-modal'); toggleCommands()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center gap-3 text-sm text-gray-200">
+                        <i class="ph ph-users text-blue-400 text-lg"></i> Manage Personas
+                    </button>
+                    <button onclick="triggerImpersonate()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center gap-3 text-sm text-gray-200 border-t border-white/5">
+                        <i class="ph ph-magic-wand text-purple-400 text-lg"></i> Impersonate Me
+                    </button>
+                </div>
+
+                <div class="flex items-end gap-2 bg-midnight-800 border border-white/10 rounded-2xl p-2 shadow-xl focus-within:border-blue-500/50 transition-all">
+                    <button onclick="toggleCommands()" class="p-3 text-gray-400 hover:text-white transition-colors rounded-xl hover:bg-white/5 shrink-0">
+                        <i class="ph ph-list text-xl"></i>
+                    </button>
                     
-                    <div id="commands-menu" class="hidden absolute bottom-full left-0 mb-4 w-64 bg-midnight-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl">
-                        <div class="p-3 bg-black/20 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5">Roleplay Tools</div>
-                        <button onclick="openModal('persona-modal'); toggleCommands()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center gap-3 text-sm text-gray-200">
-                            <i class="ph ph-users text-blue-400 text-lg"></i> Manage Personas
+                    <textarea id="user-input" rows="1" class="w-full bg-transparent border-0 text-white placeholder-gray-500 focus:ring-0 resize-none py-3 max-h-48" placeholder="Type a message..." style="min-height: 48px;"></textarea>
+                    
+                    <div class="flex items-center gap-1 shrink-0 pb-1">
+                        <button onclick="continueChat()" title="Continue Story" class="p-2 text-gray-400 hover:text-green-400 hover:bg-white/5 rounded-lg transition-all">
+                            <i class="ph ph-arrow-fat-lines-right text-xl"></i>
                         </button>
-                        <button onclick="triggerImpersonate()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center gap-3 text-sm text-gray-200 border-t border-white/5">
-                            <i class="ph ph-magic-wand text-purple-400 text-lg"></i> Impersonate Me
+                        <button onclick="sendMessage()" id="send-btn" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg transition-all">
+                            <i class="ph ph-paper-plane-right text-lg"></i>
                         </button>
                     </div>
+                </div>
 
-                    <div class="flex items-end gap-2 bg-midnight-800/50 backdrop-blur-md border border-white/10 rounded-2xl p-2 shadow-xl focus-within:border-blue-500/50 transition-all">
-                        <button onclick="toggleCommands()" class="p-3 text-gray-400 hover:text-white transition-colors rounded-xl hover:bg-white/5 shrink-0">
-                            <i class="ph ph-list text-xl"></i>
-                        </button>
-                        
-                        <textarea id="user-input" rows="1" class="w-full bg-transparent border-0 text-white placeholder-gray-500 focus:ring-0 resize-none py-3 max-h-48" placeholder="Type a message..." style="min-height: 48px;"></textarea>
-                        
-                        <div class="flex items-center gap-1 shrink-0 pb-1">
-                            <button onclick="continueChat()" title="Continue Story" class="p-2 text-gray-400 hover:text-green-400 hover:bg-white/5 rounded-lg transition-all">
-                                <i class="ph ph-arrow-fat-lines-right text-xl"></i>
-                            </button>
-                            <button onclick="sendMessage()" id="send-btn" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-600/20 transition-all">
-                                <i class="ph ph-paper-plane-right text-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center px-2 mt-2">
-                        <span id="persona-indicator" class="text-[10px] uppercase font-bold text-blue-400 tracking-wider opacity-0">User</span>
-                        <span id="status-text" class="text-[10px] text-gray-600 font-mono hidden">GENERATING...</span>
-                    </div>
+                <div class="flex justify-between items-center px-2 mt-2">
+                    <span id="persona-indicator" class="text-[10px] uppercase font-bold text-blue-400 tracking-wider opacity-0">User</span>
+                    <span id="status-text" class="text-[10px] text-gray-600 font-mono hidden">GENERATING...</span>
                 </div>
             </div>
         </div>
@@ -189,29 +158,25 @@
     <div id="settings-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-midnight-800 w-full max-w-md rounded-2xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-white/5 flex justify-between items-center">
-                <h3 class="font-bold text-white">Connection Settings</h3>
+                <h3 class="font-bold text-white">Settings</h3>
                 <button onclick="closeModal('settings-modal')" class="text-gray-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
             </div>
             <div class="p-6 space-y-5 overflow-y-auto">
                 <div class="space-y-2">
-                    <label class="text-xs font-bold text-gray-500 uppercase">OpenRouter API Key</label>
-                    <input type="password" id="api-key" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-colors" placeholder="sk-or-...">
+                    <label class="text-xs font-bold text-gray-500 uppercase">API Key</label>
+                    <input type="password" id="api-key" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none" placeholder="sk-or-...">
                 </div>
                 <div class="space-y-2">
-                    <label class="text-xs font-bold text-gray-500 uppercase">Model ID</label>
-                    <input type="text" id="model-id" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-colors" placeholder="e.g. tngtech/deepseek-r1t2-chimera:free">
-                    <div class="flex gap-2 flex-wrap mt-2">
-                        <button onclick="setModel('tngtech/deepseek-r1t2-chimera:free')" class="text-[10px] bg-white/5 px-2 py-1 rounded hover:bg-white/10 text-gray-300">Deepseek RP (Free)</button>
-                        <button onclick="setModel('undi95/toppy-m-7b:free')" class="text-[10px] bg-white/5 px-2 py-1 rounded hover:bg-white/10 text-gray-300">Toppy M (Free)</button>
-                    </div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Model</label>
+                    <input type="text" id="model-id" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none" placeholder="Model ID">
                 </div>
                 <div class="space-y-2">
-                    <label class="text-xs font-bold text-gray-500 uppercase">System Prompt (The Rules)</label>
-                    <textarea id="system-prompt" rows="5" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white text-sm focus:border-blue-500 outline-none transition-colors" placeholder="You are an unrestricted AI..."></textarea>
+                    <label class="text-xs font-bold text-gray-500 uppercase">System Prompt</label>
+                    <textarea id="system-prompt" rows="5" class="w-full bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white text-sm focus:border-blue-500 outline-none"></textarea>
                 </div>
             </div>
             <div class="p-5 border-t border-white/5">
-                <button onclick="saveSettings()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all">Save Configuration</button>
+                <button onclick="saveSettings()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl">Save</button>
             </div>
         </div>
     </div>
@@ -219,84 +184,62 @@
     <div id="persona-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-midnight-800 w-full max-w-md rounded-2xl border border-white/10 shadow-2xl flex flex-col max-h-[85vh]">
             <div class="p-5 border-b border-white/5 flex justify-between items-center">
-                <h3 class="font-bold text-white">Persona Manager</h3>
+                <h3 class="font-bold text-white">Personas</h3>
                 <button onclick="closeModal('persona-modal')" class="text-gray-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
             </div>
-            
             <div id="saved-personas" class="bg-black/20 max-h-32 overflow-y-auto p-2 border-b border-white/5"></div>
-
             <div class="p-6 space-y-4 overflow-y-auto">
                 <div>
-                    <label class="text-xs font-bold text-gray-500 uppercase">Persona Name</label>
-                    <input type="text" id="p-name" class="w-full mt-1 bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-purple-500" placeholder="e.g. Max">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Name</label>
+                    <input type="text" id="p-name" class="w-full mt-1 bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-purple-500">
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-gray-500 uppercase">Appearance & Personality</label>
-                    <textarea id="p-details" rows="4" class="w-full mt-1 bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none focus:border-purple-500" placeholder="e.g. 6ft tall, sarcastic, wears a leather jacket..."></textarea>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Details</label>
+                    <textarea id="p-details" rows="4" class="w-full mt-1 bg-midnight-900 border border-gray-700 rounded-xl p-3 text-white text-sm outline-none focus:border-purple-500"></textarea>
                 </div>
             </div>
-            
             <div class="p-5 border-t border-white/5 flex gap-3">
-                <button onclick="savePersona()" class="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl">Save & Use</button>
-                <button onclick="deletePersona()" class="px-4 py-3 bg-red-900/30 text-red-400 border border-red-900/50 rounded-xl hover:bg-red-900/50"><i class="ph ph-trash text-xl"></i></button>
+                <button onclick="savePersona()" class="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl">Save</button>
+                <button onclick="deletePersona()" class="px-4 py-3 bg-red-900/30 text-red-400 border border-red-900/50 rounded-xl"><i class="ph ph-trash text-xl"></i></button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- STATE MANAGEMENT ---
         const state = {
-            chats: [],
-            activeChat: null,
+            chats: [], activeChat: null,
             settings: { apiKey: '', model: 'tngtech/deepseek-r1t2-chimera:free', system: '' },
             persona: { name: 'User', details: '' },
-            savedPersonas: [],
-            isGenerating: false
+            savedPersonas: [], isGenerating: false
         };
 
-        // --- INIT ---
         document.addEventListener('DOMContentLoaded', () => {
-            loadState();
-            initMarkdown();
-            renderChatList();
-            
-            // Auto-create chat if empty
-            if (state.chats.length === 0) createNewChat();
-            else loadChat(state.chats[0].id);
-
+            loadState(); initMarkdown(); renderChatList();
+            if (state.chats.length === 0) createNewChat(); else loadChat(state.chats[0].id);
             updatePersonaUI();
-            
-            // Hide Loader
-            setTimeout(() => {
-                document.getElementById('loader').classList.add('opacity-0', 'pointer-events-none');
-            }, 500);
         });
 
-        // --- CORE FUNCTIONS ---
-
+        // --- CORE SEND FUNCTION (FIXED) ---
         async function sendMessage(isContinue = false) {
             const input = document.getElementById('user-input');
             const text = input.value.trim();
 
             if (!isContinue && (!text || state.isGenerating)) return;
-            if (!state.settings.apiKey) return alert("Please enter your API Key in Settings!");
+            if (!state.settings.apiKey) return alert("Missing API Key");
+
+            // 1. CLEAN THE API KEY (Fixes ISO-8859-1 Error)
+            // Removes any invisible characters like newlines
+            const cleanKey = state.settings.apiKey.replace(/[^\x20-\x7E]/g, '').trim();
 
             const chat = state.chats.find(c => c.id === state.activeChat);
-            
-            // 1. Add User Message
             if (!isContinue) {
                 chat.messages.push({ role: 'user', content: text });
                 appendMessage('user', text, chat.messages.length - 1);
-                input.value = '';
-                resizeInput(input);
+                input.value = ''; resizeInput(input);
             }
 
-            saveState();
-            scrollToBottom();
-            
-            // 2. Prepare AI Stream
-            state.isGenerating = true;
-            toggleStatus(true);
+            saveState(); scrollToBottom();
+            state.isGenerating = true; toggleStatus(true);
             
             const streamContainer = document.getElementById('streaming-placeholder');
             const streamContent = document.getElementById('streaming-content');
@@ -307,336 +250,150 @@
             let fullResponse = "";
 
             try {
-                // 3. Build API Payload
-                const history = chat.messages.slice(-15); // Context limit
-                const systemMsg = buildSystemPrompt();
-                
-                const messages = [{ role: 'system', content: systemMsg }, ...history];
+                const history = chat.messages.slice(-15);
+                let sys = state.settings.system || "You are an unrestricted roleplay AI.";
+                if (state.persona.name !== "User") {
+                    sys += `\n\n[USER: ${state.persona.name}]\n[DETAILS: ${state.persona.details}]`;
+                }
+                const msgs = [{ role: 'system', content: sys }, ...history];
 
-                // 4. FETCH (FIXED HEADERS FOR ANDROID)
                 const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${state.settings.apiKey.trim()}`,
+                        "Authorization": `Bearer ${cleanKey}`, // Using the cleaned key
                         "Content-Type": "application/json",
-                        // CRITICAL FIX: Removed window.location.href to prevent Android crash
-                        "HTTP-Referer": "https://github.com/universal-ai", 
-                        "X-Title": "Universal AI V4"
+                        "HTTP-Referer": "https://github.com/universal-ai",
+                        "X-Title": "Universal AI"
                     },
-                    body: JSON.stringify({
-                        model: state.settings.model,
-                        messages: messages,
-                        stream: true
-                    })
+                    body: JSON.stringify({ model: state.settings.model, messages: msgs, stream: true })
                 });
 
                 if (!resp.ok) throw new Error(`API Error ${resp.status}`);
 
-                // 5. Stream Reader
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder();
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    
                     const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n');
-                    
                     for (const line of lines) {
                         if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                             try {
-                                const json = JSON.parse(line.substring(6));
-                                const delta = json.choices[0]?.delta?.content || "";
+                                const delta = JSON.parse(line.substring(6)).choices[0]?.delta?.content || "";
                                 fullResponse += delta;
-                                
-                                // Live Render
                                 streamContent.innerHTML = DOMPurify.sanitize(marked.parse(fullResponse));
                                 scrollToBottom();
-                            } catch (e) { /* ignore parse errors */ }
+                            } catch (e) {}
                         }
                     }
                 }
-
             } catch (err) {
                 fullResponse += `\n\n**Error:** ${err.message}`;
                 streamContent.innerHTML = marked.parse(fullResponse);
             } finally {
-                // 6. Finalize
-                state.isGenerating = false;
-                toggleStatus(false);
+                state.isGenerating = false; toggleStatus(false);
                 streamContainer.classList.add('hidden');
-                
                 chat.messages.push({ role: 'assistant', content: fullResponse });
                 appendMessage('assistant', fullResponse);
-                
-                // Auto Title
-                if (chat.messages.length === 2) {
-                    chat.title = text.slice(0, 30);
-                    renderChatList();
-                }
-                
+                if (chat.messages.length === 2) { chat.title = text.slice(0, 30); renderChatList(); }
                 saveState();
             }
         }
 
         // --- UI RENDERING ---
-
         function appendMessage(role, text, index) {
             const list = document.getElementById('messages-list');
             const isUser = role === 'user';
-            
             const wrapper = document.createElement('div');
             wrapper.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} group`;
-
-            // HTML Structure
+            
             if (isUser) {
                 wrapper.innerHTML = `
                     <div class="relative max-w-[85%] md:max-w-[70%]">
-                        <button onclick="editMessage(${index})" class="absolute -left-10 top-2 p-2 text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i class="ph ph-pencil-simple text-lg"></i>
-                        </button>
-                        <div class="msg-user px-5 py-3 text-sm md:text-base prose prose-invert">
-                            ${DOMPurify.sanitize(marked.parse(text))}
-                        </div>
-                    </div>
-                `;
+                        <button onclick="editMessage(${index})" class="absolute -left-10 top-2 p-2 text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"><i class="ph ph-pencil-simple text-lg"></i></button>
+                        <div class="msg-user px-5 py-3 text-sm md:text-base prose prose-invert">${DOMPurify.sanitize(marked.parse(text))}</div>
+                    </div>`;
             } else {
                 wrapper.innerHTML = `
                     <div class="w-full max-w-3xl pr-2 md:pr-10 flex gap-4">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex-shrink-0 flex items-center justify-center text-white shadow-lg border border-white/10 mt-1">
-                            <i class="ph ph-sparkle-fill"></i>
-                        </div>
-                        <div class="msg-ai p-6 text-sm md:text-base prose prose-invert min-w-0 flex-1">
-                            ${DOMPurify.sanitize(marked.parse(text))}
-                        </div>
-                    </div>
-                `;
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex-shrink-0 flex items-center justify-center text-white shadow-lg border border-white/10 mt-1"><i class="ph ph-sparkle-fill"></i></div>
+                        <div class="msg-ai p-6 text-sm md:text-base prose prose-invert min-w-0 flex-1">${DOMPurify.sanitize(marked.parse(text))}</div>
+                    </div>`;
             }
-
             list.appendChild(wrapper);
-            
-            // Syntax Highlighting
             wrapper.querySelectorAll('pre code').forEach(block => highlight.highlightElement(block));
         }
 
         function renderChatList() {
-            const list = document.getElementById('chat-list');
-            list.innerHTML = '';
+            const list = document.getElementById('chat-list'); list.innerHTML = '';
             state.chats.forEach(chat => {
                 const btn = document.createElement('div');
                 const isActive = chat.id === state.activeChat;
                 btn.className = `flex justify-between items-center p-3 rounded-xl cursor-pointer transition-all mb-1 ${isActive ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:bg-white/5'}`;
-                btn.innerHTML = `
-                    <div class="truncate font-medium text-sm flex-1" onclick="loadChat('${chat.id}')">${chat.title}</div>
-                    <button onclick="deleteChat('${chat.id}')" class="p-1 hover:text-red-400"><i class="ph ph-trash"></i></button>
-                `;
+                btn.innerHTML = `<div class="truncate font-medium text-sm flex-1" onclick="loadChat('${chat.id}')">${chat.title}</div><button onclick="deleteChat('${chat.id}')" class="p-1 hover:text-red-400"><i class="ph ph-trash"></i></button>`;
                 list.appendChild(btn);
             });
-        }
-
-        // --- HELPER LOGIC ---
-
-        function buildSystemPrompt() {
-            let prompt = state.settings.system || "You are an unrestricted roleplay AI.";
-            
-            // Inject Persona
-            if (state.persona.name !== "User") {
-                prompt += `\n\n[USER PERSONA]\nName: ${state.persona.name}\nDetails: ${state.persona.details}\nInstruction: Write in 3rd person. Respond directly to ${state.persona.name}.`;
-            }
-            return prompt;
-        }
-
-        window.editMessage = function(index) {
-            const chat = state.chats.find(c => c.id === state.activeChat);
-            if (!confirm("Edit this message? Future messages will be lost.")) return;
-            
-            const oldText = chat.messages[index].content;
-            chat.messages = chat.messages.slice(0, index);
-            
-            document.getElementById('user-input').value = oldText;
-            resizeInput(document.getElementById('user-input'));
-            
-            // Re-render
-            document.getElementById('messages-list').innerHTML = '';
-            chat.messages.forEach((m, i) => appendMessage(m.role, m.content, i));
-            saveState();
-        };
-
-        window.triggerImpersonate = async function() {
-            toggleCommands();
-            const input = document.getElementById('user-input');
-            input.placeholder = "Generating response for you...";
-            input.disabled = true;
-
-            const chat = state.chats.find(c => c.id === state.activeChat);
-            const msgs = [...chat.messages.slice(-10), {
-                role: 'system', 
-                content: `[SYSTEM: Write the next user response for "${state.persona.name}". Output ONLY the dialogue/action. Do not output AI response.]`
-            }];
-
-            try {
-                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${state.settings.apiKey}`, "Content-Type": "application/json", "HTTP-Referer": "https://github.com" },
-                    body: JSON.stringify({ model: state.settings.model, messages: msgs })
-                });
-                const data = await res.json();
-                input.value = data.choices[0].message.content;
-            } catch (e) { alert("Impersonate failed"); }
-            
-            input.disabled = false;
-            input.placeholder = "Type a message...";
-            input.focus();
-            resizeInput(input);
-        };
-
-        // --- PERSONA SYSTEM ---
-        
-        window.savePersona = function() {
-            const name = document.getElementById('p-name').value.trim() || "User";
-            const details = document.getElementById('p-details').value.trim();
-            
-            const newPersona = { name, details };
-            state.persona = newPersona; // Set active
-            
-            // Update saved list
-            const idx = state.savedPersonas.findIndex(p => p.name === name);
-            if (idx > -1) state.savedPersonas[idx] = newPersona;
-            else state.savedPersonas.push(newPersona);
-            
-            saveState();
-            updatePersonaUI();
-            closeModal('persona-modal');
-        };
-
-        window.deletePersona = function() {
-            const name = document.getElementById('p-name').value;
-            state.savedPersonas = state.savedPersonas.filter(p => p.name !== name);
-            if (state.persona.name === name) state.persona = { name: "User", details: "" };
-            saveState();
-            updatePersonaUI();
-        };
-
-        function updatePersonaUI() {
-            // Indicator
-            const ind = document.getElementById('persona-indicator');
-            ind.textContent = state.persona.name;
-            ind.classList.remove('opacity-0');
-            
-            // List in Modal
-            const list = document.getElementById('saved-personas');
-            list.innerHTML = state.savedPersonas.map(p => `
-                <div onclick="loadPersona('${p.name}')" class="p-2 hover:bg-white/10 cursor-pointer rounded flex justify-between text-sm text-gray-300">
-                    <span>${p.name}</span>
-                </div>
-            `).join('');
-            
-            // Inputs
-            document.getElementById('p-name').value = state.persona.name;
-            document.getElementById('p-details').value = state.persona.details;
-        }
-
-        window.loadPersona = function(name) {
-            const p = state.savedPersonas.find(x => x.name === name);
-            if (p) {
-                document.getElementById('p-name').value = p.name;
-                document.getElementById('p-details').value = p.details;
-            }
-        };
-
-        // --- BOILERPLATE UTILS ---
-
-        function createNewChat() {
-            const id = Date.now().toString();
-            state.chats.unshift({ id, title: 'New Roleplay', messages: [] });
-            loadChat(id);
         }
 
         function loadChat(id) {
             state.activeChat = id;
             document.getElementById('messages-list').innerHTML = '';
             document.getElementById('welcome-screen').style.display = 'flex';
-            
             const chat = state.chats.find(c => c.id === id);
             if (chat.messages.length > 0) {
                 document.getElementById('welcome-screen').style.display = 'none';
                 chat.messages.forEach((m, i) => appendMessage(m.role, m.content, i));
             }
-            
-            renderChatList();
-            saveState();
-            
-            // Mobile: Close sidebar
+            renderChatList(); saveState();
             if (window.innerWidth < 768) toggleSidebar();
         }
 
-        function deleteChat(id) {
-            if (!confirm("Delete this roleplay?")) return;
-            state.chats = state.chats.filter(c => c.id !== id);
-            if (state.chats.length === 0) createNewChat();
-            else loadChat(state.chats[0].id);
-        }
-
-        function scrollToBottom() {
-            const c = document.getElementById('chat-container');
-            // Force layout recalc
-            c.scrollTop = c.scrollHeight; 
-            setTimeout(() => c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' }), 50);
-        }
-
-        function saveState() { localStorage.setItem('univ_ai_v4', JSON.stringify(state)); }
+        // --- UTILS ---
+        function createNewChat() { const id = Date.now().toString(); state.chats.unshift({ id, title: 'New Roleplay', messages: [] }); loadChat(id); }
+        function deleteChat(id) { if (!confirm("Delete?")) return; state.chats = state.chats.filter(c => c.id !== id); if (state.chats.length === 0) createNewChat(); else loadChat(state.chats[0].id); }
+        function scrollToBottom() { const c = document.getElementById('chat-container'); c.scrollTop = c.scrollHeight; setTimeout(() => c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' }), 50); }
+        function saveState() { localStorage.setItem('univ_ai_v5', JSON.stringify(state)); }
         function loadState() {
-            const s = localStorage.getItem('univ_ai_v4');
-            if (s) {
-                const p = JSON.parse(s);
-                state.chats = p.chats || [];
-                state.settings = p.settings || state.settings;
-                state.savedPersonas = p.savedPersonas || [];
-                state.persona = p.persona || state.persona;
-            }
+            const s = localStorage.getItem('univ_ai_v5');
+            if (s) { const p = JSON.parse(s); state.chats = p.chats || []; state.settings = p.settings || state.settings; state.savedPersonas = p.savedPersonas || []; state.persona = p.persona || state.persona; }
         }
         function saveSettings() {
             state.settings.apiKey = document.getElementById('api-key').value;
             state.settings.model = document.getElementById('model-id').value;
             state.settings.system = document.getElementById('system-prompt').value;
-            saveState();
-            closeModal('settings-modal');
+            saveState(); closeModal('settings-modal');
         }
-
-        // UI Toggles
-        window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        function updatePersonaUI() {
+            document.getElementById('persona-indicator').textContent = state.persona.name;
+            document.getElementById('persona-indicator').classList.remove('opacity-0');
+            const list = document.getElementById('saved-personas');
+            list.innerHTML = state.savedPersonas.map(p => `<div onclick="loadPersona('${p.name}')" class="p-2 hover:bg-white/10 cursor-pointer rounded flex justify-between text-sm text-gray-300"><span>${p.name}</span></div>`).join('');
+            document.getElementById('p-name').value = state.persona.name; document.getElementById('p-details').value = state.persona.details;
+        }
+        window.savePersona = function() {
+            const name = document.getElementById('p-name').value.trim() || "User";
+            const details = document.getElementById('p-details').value.trim();
+            const newPersona = { name, details }; state.persona = newPersona;
+            const idx = state.savedPersonas.findIndex(p => p.name === name);
+            if (idx > -1) state.savedPersonas[idx] = newPersona; else state.savedPersonas.push(newPersona);
+            saveState(); updatePersonaUI(); closeModal('persona-modal');
         };
+        window.loadPersona = function(name) { const p = state.savedPersonas.find(x => x.name === name); if (p) { document.getElementById('p-name').value = p.name; document.getElementById('p-details').value = p.details; } };
+        window.deletePersona = function() { const name = document.getElementById('p-name').value; state.savedPersonas = state.savedPersonas.filter(p => p.name !== name); if (state.persona.name === name) state.persona = { name: "User", details: "" }; saveState(); updatePersonaUI(); };
+        window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); };
         window.toggleCommands = () => document.getElementById('commands-menu').classList.toggle('hidden');
-        window.openModal = (id) => {
-            document.getElementById(id).classList.remove('hidden');
-            if(id === 'settings-modal') {
-                document.getElementById('api-key').value = state.settings.apiKey;
-                document.getElementById('model-id').value = state.settings.model;
-                document.getElementById('system-prompt').value = state.settings.system;
-            }
-        };
+        window.openModal = (id) => { document.getElementById(id).classList.remove('hidden'); if(id === 'settings-modal') { document.getElementById('api-key').value = state.settings.apiKey; document.getElementById('model-id').value = state.settings.model; document.getElementById('system-prompt').value = state.settings.system; }};
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.setModel = (m) => document.getElementById('model-id').value = m;
         window.continueChat = () => sendMessage(true);
+        window.editMessage = function(index) { const chat = state.chats.find(c => c.id === state.activeChat); if (!confirm("Edit message?")) return; const oldText = chat.messages[index].content; chat.messages = chat.messages.slice(0, index); document.getElementById('user-input').value = oldText; document.getElementById('messages-list').innerHTML = ''; chat.messages.forEach((m, i) => appendMessage(m.role, m.content, i)); saveState(); };
+        window.triggerImpersonate = async function() { toggleCommands(); const input = document.getElementById('user-input'); input.placeholder = "Generating..."; input.disabled = true; const chat = state.chats.find(c => c.id === state.activeChat); const cleanKey = state.settings.apiKey.replace(/[^\x20-\x7E]/g, '').trim(); const msgs = [...chat.messages.slice(-10), { role: 'system', content: `[SYSTEM: Write the next user response for "${state.persona.name}".]` }]; try { const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Authorization": `Bearer ${cleanKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ model: state.settings.model, messages: msgs }) }); const data = await res.json(); input.value = data.choices[0].message.content; } catch (e) { alert("Impersonate failed"); } input.disabled = false; input.placeholder = "Type a message..."; input.focus(); resizeInput(input); };
         window.resizeInput = (el) => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 150) + 'px'; };
         document.getElementById('user-input').addEventListener('input', (e) => resizeInput(e.target));
-        
-        // Markdown Init
-        function initMarkdown() {
-            marked.use({ 
-                gfm: true, 
-                breaks: true,
-                highlight: (code, lang) => hljs.highlightAuto(code).value 
-            });
-        }
-        function toggleStatus(show) {
-            const el = document.getElementById('status-text');
-            if (show) { el.classList.remove('hidden'); el.classList.add('animate-pulse'); }
-            else { el.classList.add('hidden'); el.classList.remove('animate-pulse'); }
-        }
+        document.getElementById('user-input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(false); } });
+        function initMarkdown() { marked.use({ gfm: true, breaks: true, highlight: (code, lang) => hljs.highlightAuto(code).value }); }
+        function toggleStatus(show) { const el = document.getElementById('status-text'); if (show) { el.classList.remove('hidden'); el.classList.add('animate-pulse'); } else { el.classList.add('hidden'); el.classList.remove('animate-pulse'); } }
     </script>
 </body>
 </html>
