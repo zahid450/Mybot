@@ -273,46 +273,40 @@
         };
 
         // ATTACH TO WINDOW TO FIX CLICK ISSUE
-        window.editMessage = function(index) {
-            // Access the state globally
-            // Note: We need to make sure 'state' and 'elements' are accessible. 
-            // If this fails, we will move 'state' out, but try this first.
-            
-            const chat = state.chats.find(c => c.id === state.currentChatId);
-            
-            // Safety check
-            if (!chat || !chat.messages[index]) {
-                console.error("Message not found at index", index);
-                return;
-            }
+window.editMessage = function(index) {
+    // 1. Find the current chat
+    const chat = state.chats.find(c => c.id === state.currentChatId);
+    
+    // Safety check
+    if (!chat || !chat.messages[index]) {
+        console.error("Message not found at index", index);
+        return;
+    }
 
-            // Confirm with user
-            if (!confirm('Edit this message? This will delete all subsequent messages.')) {
-                return;
-            }
+    // Confirm with user
+    if (!confirm('Edit this message? This will delete all subsequent messages.')) {
+        return;
+    }
 
-            // 1. Get the old text
-            const textToEdit = chat.messages[index].content;
-            
-            // 2. Put it into the input box
-            const input = document.getElementById('user-input'); // Direct fetch to be safe
-            input.value = textToEdit;
-            
-            // 3. Resize input box
-            input.style.height = 'auto'; 
-            input.style.height = Math.min(input.scrollHeight, 192) + 'px';
-            input.focus();
-            
-            // 4. Delete this message and EVERYTHING after it
-            chat.messages = chat.messages.slice(0, index);
-            
-            // 5. Update the screen
-            // We need to call the functions used in the main app
-            // Since they might be inside the listener, we need a way to reach saveState/render.
-            // If this step fails, see the "Emergency Fix" below.
-            localStorage.setItem('universal_ai_state', JSON.stringify(state));
-            location.reload(); // Simple reload to refresh the UI immediately
-        };
+    // 2. Get the old text
+    const textToEdit = chat.messages[index].content;
+    
+    // 3. Put it into the input box
+    const input = document.getElementById('user-input');
+    input.value = textToEdit;
+    
+    // 4. Resize input box (Visual fix)
+    input.style.height = 'auto'; 
+    input.style.height = Math.min(input.scrollHeight, 192) + 'px';
+    input.focus();
+    
+    // 5. Delete this message and EVERYTHING after it
+    chat.messages = chat.messages.slice(0, index);
+    
+    // 6. UPDATE SCREEN INSTANTLY (Without Reloading)
+    saveState();       // Save the changes to memory
+    renderMessages();  // Re-draw the chat bubbles immediately
+};
 
         // --- DOM Elements ---
         const elements = {
