@@ -139,7 +139,7 @@
 
         <main class="flex-1 flex flex-col h-full relative w-full">
             
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth pb-40">
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth pb-80">
                 <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
                     <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg shadow-purple-500/30">
                         <i class="ph ph-sparkle"></i>
@@ -698,7 +698,17 @@
             const title = userMsg.slice(0, 30) + (userMsg.length > 30 ? '...' : '');
             renameChat(chatId, title);
         }
-        function scrollToBottom() { elements.chatContainer.scrollTo({ top: elements.chatContainer.scrollHeight, behavior: 'smooth' }); }
+        function scrollToBottom() {
+            const container = elements.chatContainer;
+            
+            // Immediate scroll
+            container.scrollTop = container.scrollHeight;
+            
+            // Double-check scroll after a tiny delay (Fixes image/markdown resize issues)
+            setTimeout(() => {
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            }, 100);
+        }
         function escapeHtml(text) { const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }; return text.replace(/[&<>"']/g, function(m) { return map[m]; }); }
         
         function openSettings() {
